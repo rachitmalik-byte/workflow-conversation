@@ -394,7 +394,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const loadProfileAndTeammates = async () => {
     try {
       const allProfiles = await dbClient.getProfiles();
-      setProfiles(allProfiles);
+      setProfiles([...allProfiles]);
 
       const user = await dbClient.getCurrentUser();
       setCurrentUser(user);
@@ -478,6 +478,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const user = await dbClient.switchUser(userId);
       setCurrentUser(user);
+      const allProfiles = await dbClient.getProfiles();
+      setProfiles([...allProfiles]);
     } catch (err) {
       console.error('Failed to switch user:', err);
     } finally {

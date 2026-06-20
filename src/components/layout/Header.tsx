@@ -90,7 +90,7 @@ export const Header: React.FC<HeaderProps> = ({ currentView, onNavigate, onToggl
           <span className="text-xs text-muted-foreground mr-1">Teammates:</span>
           <div className="flex -space-x-1 overflow-hidden">
             {profiles
-              .filter((p) => p.id !== currentUser?.id)
+              .filter((p) => p.id !== currentUser?.id && p.status === 'active')
               .map((p) => (
                 <div
                   key={p.id}

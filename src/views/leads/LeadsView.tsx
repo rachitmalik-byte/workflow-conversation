@@ -442,7 +442,7 @@ export const LeadsView: React.FC<LeadsViewProps> = ({ onNavigate }) => {
                 >
                   <option value="all">All Employees</option>
                   {profiles
-                    .filter((p) => p.role === 'growth_specialist')
+                    .filter((p) => p.role === 'growth_specialist' && p.status === 'active')
                     .map((p) => (
                       <option key={p.id} value={p.id}>
                         {p.full_name}

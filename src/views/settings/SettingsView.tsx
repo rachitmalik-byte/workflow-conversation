@@ -555,7 +555,7 @@ export const SettingsView: React.FC = () => {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-border">
-                      {profiles.map((p) => (
+                      {profiles.filter((p) => p.status === 'active').map((p) => (
                         <tr key={p.id} className="hover:bg-muted/20 transition-colors">
                           <td className="px-4 py-2.5 flex items-center gap-2">
                             <div className="h-6 w-6 bg-primary/10 text-primary font-semibold text-[10px] rounded-full flex items-center justify-center uppercase">

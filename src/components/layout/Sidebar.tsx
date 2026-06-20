@@ -289,7 +289,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 onChange={(e) => switchUser(e.target.value)}
                 className="w-full text-xs bg-card border border-border text-foreground px-2 py-1.5 rounded focus:outline-none focus:border-primary cursor-pointer"
               >
-                {profiles.map((p) => (
+                {profiles.filter((p) => p.status === 'active').map((p) => (
                   <option key={p.id} value={p.id}>
                     {p.full_name} ({p.role === 'head' ? 'Head' : 'Specialist'})
                   </option>

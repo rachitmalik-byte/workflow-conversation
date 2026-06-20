@@ -734,7 +734,7 @@ export const MessagingView: React.FC = () => {
             </div>
 
             {profiles
-              .filter((p) => p.id !== currentUser?.id && p.full_name.toLowerCase().includes(dmSearchText.toLowerCase()))
+              .filter((p) => p.id !== currentUser?.id && p.status === 'active' && p.full_name.toLowerCase().includes(dmSearchText.toLowerCase()))
               .filter((p) => {
                 if (showUnreadOnly && !(unreadCounts[p.id] > 0)) return false;
                 return true;
@@ -1406,8 +1406,12 @@ export const MessagingView: React.FC = () => {
                 </div>
                 <div className="flex justify-between items-center py-0.5">
                   <span className="font-semibold text-muted-foreground">Account Status</span>
-                  <span className="capitalize text-success font-bold flex items-center gap-1">
-                    <span className="h-1 w-1 bg-success rounded-full" /> {selectedProfile.status}
+                  <span className={`capitalize font-bold flex items-center gap-1 ${
+                    selectedProfile.status === 'active' ? 'text-success' : 'text-muted-foreground'
+                  }`}>
+                    <span className={`h-1 w-1 rounded-full ${
+                      selectedProfile.status === 'active' ? 'bg-success' : 'bg-muted-foreground/60'
+                    }`} /> {selectedProfile.status}
                   </span>
                 </div>
               </div>

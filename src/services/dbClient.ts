@@ -42,7 +42,7 @@ class DBClient {
 
   async getProfiles(): Promise<Profile[]> {
     const client = this.getClient();
-    if (!client) return mockDb.profiles;
+    if (!client) return [...mockDb.profiles];
 
     const { data, error } = await client.from('profiles').select('*');
     if (error) throw error;
@@ -593,12 +593,15 @@ class DBClient {
   async deleteProfile(id: string): Promise<void> {
     const client = this.getClient();
     if (!client) {
-      mockDb.profiles = mockDb.profiles.filter((p) => p.id !== id);
-      mockDb.notify('profiles', 'delete', { id });
+      const prof = mockDb.profiles.find((p) => p.id === id);
+      if (prof) {
+        prof.status = 'inactive';
+        mockDb.notify('profiles', 'update', prof);
+      }
       return;
     }
 
-    const { error } = await client.from('profiles').delete().eq('id', id);
+    const { error } = await client.from('profiles').update({ status: 'inactive' }).eq('id', id);
     if (error) throw error;
   }
 
