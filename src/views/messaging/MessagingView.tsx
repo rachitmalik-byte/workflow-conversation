@@ -1064,8 +1064,8 @@ export const MessagingView: React.FC = () => {
                                       try {
                                         await dbClient.deleteMessage(msg.id);
                                         fetchChannelData();
-                                      } catch (e) {
-                                        alert('Failed to delete message');
+                                      } catch (e: any) {
+                                        alert('Failed to delete message: ' + (e.message || e));
                                       }
                                     }
                                   }}

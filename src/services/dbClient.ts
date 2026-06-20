@@ -482,8 +482,11 @@ class DBClient {
       }
       return;
     }
-    const { error } = await client.from('messages').delete().eq('id', messageId);
+    const { data, error } = await client.from('messages').delete().eq('id', messageId).select();
     if (error) throw error;
+    if (!data || data.length === 0) {
+      throw new Error('RLS policy violation: you cannot delete this message, or the database schema needs updating.');
+    }
   }
 
   async updateMessage(messageId: string, updates: Partial<Message>): Promise<Message> {

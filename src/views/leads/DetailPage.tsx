@@ -755,7 +755,7 @@ export const DetailPage: React.FC<DetailPageProps> = ({ leadId, onNavigate }) =>
                               : 'bg-background border border-border/60 text-foreground rounded-tl-sm'
                           }`}>
                             <div className="whitespace-pre-wrap break-words space-y-1">
-                              {parseMarkdown(update.content)}
+                              {parseMarkdown(update.content, isMe)}
                             </div>
                           </div>
                           <span className="text-[9px] text-muted-foreground px-1">{dateLabel}</span>
@@ -819,7 +819,7 @@ function InfoRow({ icon, label, children }: { icon: React.ReactNode; label: stri
 // ─────────────────────────────────────────────────────────────────
 // Helper: parseMarkdown
 // ─────────────────────────────────────────────────────────────────
-function parseInlineStyles(text: string): React.ReactNode {
+function parseInlineStyles(text: string, isOutgoing?: boolean): React.ReactNode {
   // Matches bold, italic, code, link patterns, and raw URLs
   // Link pattern: \[([^\]]+)\]\(([^)]+)\)
   // Bold pattern: \*\*([^*]+)\*\*
@@ -843,16 +843,22 @@ function parseInlineStyles(text: string): React.ReactNode {
       const closeBracketIdx = part.indexOf('](');
       const label = part.slice(1, closeBracketIdx);
       const url = part.slice(closeBracketIdx + 2, -1);
+      const linkClass = isOutgoing
+        ? 'text-sky-200 hover:text-white underline font-bold break-all'
+        : 'text-primary hover:underline font-medium break-all';
       return (
-        <a key={idx} href={url} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline font-medium break-all">
+        <a key={idx} href={url} target="_blank" rel="noopener noreferrer" className={linkClass}>
           {label}
         </a>
       );
     }
     if (part.startsWith('http://') || part.startsWith('https://') || part.startsWith('www.')) {
       const href = part.startsWith('www.') ? 'http://' + part : part;
+      const linkClass = isOutgoing
+        ? 'text-sky-200 hover:text-white underline font-bold break-all decoration-1'
+        : 'text-blue-500 hover:underline font-medium break-all decoration-1';
       return (
-        <a key={idx} href={href} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline font-medium break-all decoration-1">
+        <a key={idx} href={href} target="_blank" rel="noopener noreferrer" className={linkClass}>
           {part}
         </a>
       );
@@ -861,7 +867,7 @@ function parseInlineStyles(text: string): React.ReactNode {
   });
 }
 
-function parseMarkdown(text: string): React.ReactNode {
+function parseMarkdown(text: string, isOutgoing?: boolean): React.ReactNode {
   if (!text) return null;
 
   const lines = text.split('\n');
@@ -879,21 +885,21 @@ function parseMarkdown(text: string): React.ReactNode {
     if (isH3) {
       return (
         <h4 key={idx} className="text-[11px] font-bold text-foreground mt-3 mb-1 uppercase tracking-wider">
-          {parseInlineStyles(trimmed.substring(4))}
+          {parseInlineStyles(trimmed.substring(4), isOutgoing)}
         </h4>
       );
     }
     if (isH2) {
       return (
         <h3 key={idx} className="text-xs font-extrabold text-foreground mt-4 mb-1.5 border-b border-border pb-0.5">
-          {parseInlineStyles(trimmed.substring(3))}
+          {parseInlineStyles(trimmed.substring(3), isOutgoing)}
         </h3>
       );
     }
     if (isH1) {
       return (
         <h2 key={idx} className="text-sm font-extrabold text-foreground mt-5 mb-2">
-          {parseInlineStyles(trimmed.substring(2))}
+          {parseInlineStyles(trimmed.substring(2), isOutgoing)}
         </h2>
       );
     }
@@ -901,14 +907,14 @@ function parseMarkdown(text: string): React.ReactNode {
     if (isBullet) {
       return (
         <li key={idx} className="list-disc ml-4 my-1 text-xs text-foreground/95 leading-relaxed">
-          {parseInlineStyles(trimmed.substring(2))}
+          {parseInlineStyles(trimmed.substring(2), isOutgoing)}
         </li>
       );
     }
 
     return (
       <p key={idx} className="min-h-[16px] text-xs text-foreground/95 leading-relaxed my-1 whitespace-pre-wrap">
-        {parseInlineStyles(line)}
+        {parseInlineStyles(line, isOutgoing)}
       </p>
     );
   });
