@@ -7,7 +7,9 @@ import { AlertCircle, CheckSquare, Clock, Plus, Trash2, User, Paperclip } from '
 export const TasksView: React.FC = () => {
   const { currentUser, profiles } = useAuth();
   const [tasks, setTasks] = useState<Task[]>([]);
-  const [activeTab, setActiveTab] = useState<'all' | 'personal' | 'assigned' | 'team'>('all');
+  const [activeTab, setActiveTab] = useState<'all' | 'personal' | 'assigned' | 'team'>(() => {
+    return (localStorage.getItem('relayhq_tasks_active_tab') as any) || 'all';
+  });
   
   // Creation form states
   const [isCreating, setIsCreating] = useState(false);
@@ -21,6 +23,10 @@ export const TasksView: React.FC = () => {
   const [offsetsInput, setOffsetsInput] = useState('15, 30');
   const [taskAttachments, setTaskAttachments] = useState<{ name: string; url: string }[]>([]);
   const [attachmentName, setAttachmentName] = useState('');
+
+  useEffect(() => {
+    localStorage.setItem('relayhq_tasks_active_tab', activeTab);
+  }, [activeTab]);
 
   const [error, setError] = useState<string | null>(null);
 

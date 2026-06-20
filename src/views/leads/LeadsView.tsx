@@ -13,7 +13,9 @@ type TabType = 'table' | 'kanban' | 'calendar';
 export const LeadsView: React.FC<LeadsViewProps> = ({ onNavigate }) => {
   const { currentUser, profiles } = useAuth();
   const [leads, setLeads] = useState<Lead[]>([]);
-  const [activeTab, setActiveTab] = useState<TabType>('table');
+  const [activeTab, setActiveTab] = useState<TabType>(() => {
+    return (localStorage.getItem('relayhq_leads_active_tab') as TabType) || 'table';
+  });
   const [searchQuery, setSearchQuery] = useState('');
   const [unreadLeads, setUnreadLeads] = useState<string[]>([]);
   
@@ -25,6 +27,10 @@ export const LeadsView: React.FC<LeadsViewProps> = ({ onNavigate }) => {
   const [showHidden, setShowHidden] = useState(false);
   const [draggingLeadId, setDraggingLeadId] = useState<string | null>(null);
   const [dragOverColumn, setDragOverColumn] = useState<LeadStatus | null>(null);
+
+  useEffect(() => {
+    localStorage.setItem('relayhq_leads_active_tab', activeTab);
+  }, [activeTab]);
 
   useEffect(() => {
     const loadUnreadLeads = () => {

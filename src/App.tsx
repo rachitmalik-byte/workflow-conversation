@@ -35,10 +35,13 @@ const MainAppContent: React.FC = () => {
   const { currentUser, profiles, isLoading, bypassAuth } = useAuth();
   
   // Custom router state
-  const [currentView, setCurrentViewInternal] = useState('dashboard');
+  const [currentView, setCurrentViewInternal] = useState(() => {
+    return localStorage.getItem('relayhq_current_view') || 'dashboard';
+  });
   const setCurrentView = (view: string) => {
     const cleaned = view.startsWith('/') ? view.substring(1) : view;
     setCurrentViewInternal(cleaned);
+    localStorage.setItem('relayhq_current_view', cleaned);
   };
   
   // Mobile sidebar states

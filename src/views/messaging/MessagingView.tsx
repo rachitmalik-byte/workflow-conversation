@@ -40,9 +40,49 @@ export const MessagingView: React.FC = () => {
   } = useAuth();
   
   const [channels, setChannels] = useState<Channel[]>([]);
-  const [activeChannelId, setActiveChannelId] = useState<string | null>('chan-1'); // Default to #general
-  const [activeDMUserId, setActiveDMUserId] = useState<string | null>(null);
-  const [activeGoogleSpaceId, setActiveGoogleSpaceId] = useState<string | null>(null);
+  const [activeChannelId, setActiveChannelId] = useState<string | null>(() => {
+    if (localStorage.getItem('relayhq_active_dm_user_id') || localStorage.getItem('relayhq_active_google_space_id')) {
+      return null;
+    }
+    const saved = localStorage.getItem('relayhq_active_channel_id');
+    return saved !== null ? saved : 'chan-1';
+  });
+  const [activeDMUserId, setActiveDMUserId] = useState<string | null>(() => {
+    return localStorage.getItem('relayhq_active_dm_user_id') || null;
+  });
+  const [activeGoogleSpaceId, setActiveGoogleSpaceId] = useState<string | null>(() => {
+    return localStorage.getItem('relayhq_active_google_space_id') || null;
+  });
+
+  useEffect(() => {
+    if (activeChannelId) {
+      localStorage.setItem('relayhq_active_channel_id', activeChannelId);
+      localStorage.removeItem('relayhq_active_dm_user_id');
+      localStorage.removeItem('relayhq_active_google_space_id');
+    } else {
+      localStorage.removeItem('relayhq_active_channel_id');
+    }
+  }, [activeChannelId]);
+
+  useEffect(() => {
+    if (activeDMUserId) {
+      localStorage.setItem('relayhq_active_dm_user_id', activeDMUserId);
+      localStorage.removeItem('relayhq_active_channel_id');
+      localStorage.removeItem('relayhq_active_google_space_id');
+    } else {
+      localStorage.removeItem('relayhq_active_dm_user_id');
+    }
+  }, [activeDMUserId]);
+
+  useEffect(() => {
+    if (activeGoogleSpaceId) {
+      localStorage.setItem('relayhq_active_google_space_id', activeGoogleSpaceId);
+      localStorage.removeItem('relayhq_active_channel_id');
+      localStorage.removeItem('relayhq_active_dm_user_id');
+    } else {
+      localStorage.removeItem('relayhq_active_google_space_id');
+    }
+  }, [activeGoogleSpaceId]);
 
   const [messages, setMessages] = useState<Message[]>([]);
   const [messageInput, setMessageInput] = useState('');
