@@ -31,11 +31,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
     reminders: number;
     messaging: number;
   }>({ leads: 0, tasks: 0, reminders: 0, messaging: 0 });
-  const [isHovered, setIsHovered] = useState(false);
-  const [justCollapsed, setJustCollapsed] = useState(false);
 
-  // When collapsed but hovered, temporarily expand (icons + labels) unless we just clicked collapse
-  const isExpanded = !isCollapsed || (isHovered && !justCollapsed);
+  const isExpanded = !isCollapsed;
 
   useEffect(() => {
     const checkUnread = async () => {
@@ -104,7 +101,15 @@ export const Sidebar: React.FC<SidebarProps> = ({
   ];
 
   const handleNavClick = (id: string) => {
-    onNavigate(id);
+    let target = id;
+    if (id === 'leads') {
+      if (currentView.startsWith('leads/')) {
+        target = 'leads';
+      } else {
+        target = localStorage.getItem('relayhq_last_leads_subview') || 'leads';
+      }
+    }
+    onNavigate(target);
     onClose();
   };
 
@@ -116,9 +121,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   const handleToggle = (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (!isCollapsed && onToggleCollapse) {
-      setJustCollapsed(true);
-    }
     onToggleCollapse?.();
   };
 
@@ -134,11 +136,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
       <aside
         data-expanded={isExpanded ? 'true' : 'false'}
-        onMouseEnter={() => setIsHovered(true)}
-        onMouseLeave={() => {
-          setIsHovered(false);
-          setJustCollapsed(false);
-        }}
         style={{
           width: isExpanded ? '256px' : '64px',
           transition: 'width 220ms cubic-bezier(0.4, 0, 0.2, 1)',
@@ -185,6 +182,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             return (
               <button
                 key={item.id}
+                id={`sidebar-item-${item.id}`}
                 onClick={() => handleNavClick(item.id)}
                 title={!isExpanded ? item.label : undefined}
                 className={`
@@ -254,7 +252,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   transition: 'padding 220ms cubic-bezier(0.4,0,0.2,1)',
                 }}
               >
-                {isCollapsed && !isHovered ? (
+                {isCollapsed ? (
                   <ChevronRight className="h-4 w-4 flex-shrink-0" />
                 ) : (
                   <>

@@ -400,12 +400,25 @@ export const SettingsView: React.FC = () => {
                   </div>
                 </div>
 
-                <button
-                  type="submit"
-                  className="px-4 py-2 bg-primary hover:bg-primary/95 text-white rounded text-xs font-semibold shadow-sm transition-colors cursor-pointer"
-                >
-                  Save Profile Changes
-                </button>
+                <div className="flex flex-wrap gap-3 pt-2">
+                  <button
+                    type="submit"
+                    className="px-4 py-2 bg-primary hover:bg-primary/95 text-white rounded text-xs font-semibold shadow-sm transition-colors cursor-pointer font-bold"
+                  >
+                    Save Profile Changes
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      localStorage.removeItem('relayhq_tutorial_completed');
+                      alert('Tutorial Tour has been reset. We will now reload the page to start the tour!');
+                      window.location.reload();
+                    }}
+                    className="px-3 py-2 bg-muted hover:bg-muted/80 text-foreground border border-border rounded text-xs font-semibold transition-colors cursor-pointer"
+                  >
+                    Reset & Restart Guided Tour
+                  </button>
+                </div>
               </form>
             </div>
           )}

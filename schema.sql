@@ -238,11 +238,6 @@ CREATE POLICY "Tasks Select" ON public.tasks FOR SELECT TO authenticated
 CREATE POLICY "Tasks Insert" ON public.tasks FOR INSERT TO authenticated
     WITH CHECK (
         creator_id = (SELECT auth.uid())
-        AND (
-            public.is_head() 
-            OR assignee_id = (SELECT auth.uid()) 
-            OR assignee_id IS NULL
-        )
     );
 
 CREATE POLICY "Tasks Update" ON public.tasks FOR UPDATE TO authenticated

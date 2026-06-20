@@ -49,15 +49,16 @@ export const TasksView: React.FC = () => {
     };
   }, [currentUser]);
 
-  // Set default assignee for Specialist
+  // Set default assignee on creation
   useEffect(() => {
-    if (currentUser && currentUser.role === 'growth_specialist') {
-      setAssigneeId(currentUser.id);
-      if (type === 'assigned') {
-        setType('personal'); // Specialists can only create personal or team tasks
+    if (isCreating) {
+      if (type === 'personal') {
+        setAssigneeId(currentUser?.id || '');
+      } else if (type === 'team') {
+        setAssigneeId('');
+      } else if (type === 'assigned' && assigneeId === (currentUser?.id || '')) {
+        setAssigneeId(''); // Reset selection to force picking another user
       }
-    } else {
-      setAssigneeId('');
     }
   }, [currentUser, isCreating, type]);
 
@@ -216,7 +217,7 @@ export const TasksView: React.FC = () => {
                   className="w-full text-sm bg-background border border-border text-foreground px-3 py-2 rounded focus:outline-none focus:border-primary cursor-pointer"
                 >
                   <option value="personal">Personal Item</option>
-                  {currentUser?.role === 'head' && <option value="assigned">Assigned Teammate</option>}
+                  <option value="assigned">Assigned Teammate</option>
                   <option value="team">Team-wide Announcement</option>
                 </select>
               </div>
@@ -237,7 +238,7 @@ export const TasksView: React.FC = () => {
               </div>
             </div>
 
-            {type === 'assigned' && currentUser?.role === 'head' && (
+            {type === 'assigned' && (
               <div className="space-y-1">
                 <label className="block text-xs font-medium text-muted-foreground mb-1">
                   Assign To <span className="text-danger">*</span>
@@ -257,10 +258,10 @@ export const TasksView: React.FC = () => {
                 >
                   <option value="">Select Growth Specialist...</option>
                   {profiles
-                    .filter((p) => p.role === 'growth_specialist' && p.status === 'active' && p.full_name.toLowerCase().includes(assigneeSearchText.toLowerCase()))
+                    .filter((p) => p.status === 'active' && p.full_name.toLowerCase().includes(assigneeSearchText.toLowerCase()))
                     .map((p) => (
                       <option key={p.id} value={p.id}>
-                        {p.full_name}
+                        {p.full_name} ({p.role === 'head' ? 'Head' : 'Specialist'})
                       </option>
                     ))}
                 </select>

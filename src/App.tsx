@@ -16,6 +16,7 @@ import { SettingsView } from './views/settings/SettingsView';
 import { NotesView } from './views/notes/NotesView';
 import { AuthPage } from './views/auth/AuthPage';
 import { dbClient } from './services/dbClient';
+import { TutorialTour } from './components/ui/TutorialTour';
 import type { Reminder } from './types/database';
 import { Volume2 } from 'lucide-react';
 
@@ -38,10 +39,16 @@ const MainAppContent: React.FC = () => {
   const [currentView, setCurrentViewInternal] = useState(() => {
     return localStorage.getItem('relayhq_current_view') || 'dashboard';
   });
+  const [showTutorial, setShowTutorial] = useState(() => {
+    return localStorage.getItem('relayhq_tutorial_completed') !== 'true';
+  });
   const setCurrentView = (view: string) => {
     const cleaned = view.startsWith('/') ? view.substring(1) : view;
     setCurrentViewInternal(cleaned);
     localStorage.setItem('relayhq_current_view', cleaned);
+    if (cleaned.startsWith('leads')) {
+      localStorage.setItem('relayhq_last_leads_subview', cleaned);
+    }
   };
   
   // Mobile sidebar states
@@ -471,6 +478,13 @@ const MainAppContent: React.FC = () => {
 
   return (
     <div className="flex h-screen w-screen overflow-hidden bg-background">
+      {showTutorial && currentUser && (
+        <TutorialTour
+          currentView={currentView}
+          onNavigate={setCurrentView}
+          onClose={() => setShowTutorial(false)}
+        />
+      )}
       {/* Workspace Sidebar Wrapper */}
       <Sidebar
         currentView={currentView}

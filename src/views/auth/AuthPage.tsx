@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { supabase } from '../../services/supabase';
 import { dbClient } from '../../services/dbClient';
-import { Mail, Lock, User, AlertCircle, Loader2 } from 'lucide-react';
+import { Mail, Lock, User, AlertCircle, Loader2, Eye, EyeOff } from 'lucide-react';
 
 interface AuthPageProps {
   onBypass: () => void;
@@ -12,6 +12,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onBypass, onSuccess }) => {
   const [isSignUp, setIsSignUp] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [fullName, setFullName] = useState('');
   const [role, setRole] = useState<'head' | 'growth_specialist'>('growth_specialist');
   const [designation, setDesignation] = useState('');
@@ -215,13 +216,20 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onBypass, onSuccess }) => {
             <div className="relative">
               <Lock className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground/60" />
               <input
-                type="password"
+                type={showPassword ? 'text' : 'password'}
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
-                className="w-full pl-10 pr-3 py-2 border border-border bg-background text-foreground text-xs rounded focus:outline-none focus:border-primary"
+                className="w-full pl-10 pr-10 py-2 border border-border bg-background text-foreground text-xs rounded focus:outline-none focus:border-primary"
               />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-2.5 text-muted-foreground/60 hover:text-foreground focus:outline-none cursor-pointer flex items-center justify-center"
+              >
+                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
             </div>
           </div>
 

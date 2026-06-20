@@ -33,6 +33,17 @@ export const LeadsView: React.FC<LeadsViewProps> = ({ onNavigate }) => {
   }, [activeTab]);
 
   useEffect(() => {
+    const handleTabReset = () => {
+      const tab = localStorage.getItem('relayhq_leads_active_tab') as TabType;
+      if (tab) setActiveTab(tab);
+    };
+    window.addEventListener('leads-tab-reset', handleTabReset);
+    return () => {
+      window.removeEventListener('leads-tab-reset', handleTabReset);
+    };
+  }, []);
+
+  useEffect(() => {
     const loadUnreadLeads = () => {
       try {
         const saved = localStorage.getItem('relayhq_unread_leads');
@@ -392,6 +403,7 @@ export const LeadsView: React.FC<LeadsViewProps> = ({ onNavigate }) => {
             <span>Kanban</span>
           </button>
           <button
+            id="leads-tab-calendar"
             onClick={() => setActiveTab('calendar')}
             className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded ${
               activeTab === 'calendar' ? 'bg-card shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'
@@ -644,43 +656,178 @@ export const LeadsView: React.FC<LeadsViewProps> = ({ onNavigate }) => {
           })}
         </div>
       ) : (
-        /* Calendar View Plotting */
-        <div className="border border-border rounded-lg bg-card p-6 shadow-sm">
-          <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-4">Outbound Action Calendar</h3>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {filteredLeads.map((l) => (
-              <div key={l.id} className="p-4 border border-border rounded-lg bg-muted/10 hover:bg-muted/20 transition-colors flex items-start justify-between gap-4">
-                <div className="space-y-1">
-                  <div className="flex items-center gap-2">
-                    <span className="text-[9px] font-bold uppercase tracking-wide bg-primary/10 text-primary px-1.5 py-0.5 rounded">
-                      Updated: {new Date(l.updated_at).toLocaleDateString()}
-                    </span>
-                    <span className={`text-[8px] font-semibold border px-1.5 py-0.2 rounded ${getUserColorClass(l.created_by)}`}>
-                      By: {getProfileName(l.created_by)}
-                    </span>
-                  </div>
-                  <h4 className="text-sm font-bold text-foreground mt-1.5 flex items-center gap-1.5">
-                    {unreadLeads.includes(l.id) && (
-                      <span className="h-1.5 w-1.5 rounded-full bg-danger animate-pulse flex-shrink-0" title="New unread updates" />
-                    )}
-                    <span className={unreadLeads.includes(l.id) ? 'font-extrabold text-foreground' : ''}>
-                      {l.company_name}
-                    </span>
-                  </h4>
-                  <p className="text-xs text-muted-foreground">{l.prospect_name} ({l.email})</p>
-                  <p className="text-[10px] text-muted-foreground/60 italic truncate max-w-[200px]">{l.notes || 'No notes logged.'}</p>
+        /* Calendar View Grouped Timeline Plotting */
+        <div className="space-y-8">
+          {(() => {
+            const dateGroups = (() => {
+              const groups: { [dateStr: string]: Lead[] } = {};
+              filteredLeads.forEach((l) => {
+                const d = new Date(l.updated_at);
+                const year = d.getFullYear();
+                const month = String(d.getMonth() + 1).padStart(2, '0');
+                const day = String(d.getDate()).padStart(2, '0');
+                const key = `${year}-${month}-${day}`;
+
+                if (!groups[key]) {
+                  groups[key] = [];
+                }
+                groups[key].push(l);
+              });
+
+              return Object.keys(groups)
+                .sort((a, b) => b.localeCompare(a))
+                .map((dateKey) => {
+                  const dateObj = new Date(dateKey + 'T00:00:00');
+                  return {
+                    dateKey,
+                    dateObj,
+                    leads: groups[dateKey],
+                  };
+                });
+            })();
+
+            if (dateGroups.length === 0) {
+              return (
+                <div className="border border-border border-dashed bg-card rounded-lg p-10 text-center text-xs text-muted-foreground">
+                  No activity scheduled or logged for the current target criteria.
                 </div>
-                <button
-                  onClick={() => onNavigate(`leads/${l.id}`)}
-                  className="p-1 bg-card border border-border hover:bg-muted text-muted-foreground hover:text-foreground rounded"
-                  title="View lead"
-                >
-                  <Eye className="h-4 w-4" />
-                </button>
-              </div>
-            ))}
-          </div>
+              );
+            }
+
+            return dateGroups.map((group) => {
+              const monthStr = group.dateObj.toLocaleString(undefined, { month: 'short' }).toUpperCase();
+              const dayStr = group.dateObj.getDate();
+              const yearStr = group.dateObj.getFullYear();
+              const weekdayStr = group.dateObj.toLocaleString(undefined, { weekday: 'long' });
+              const fullDateStr = group.dateObj.toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
+
+              const totalCount = group.leads.length;
+              const wonCount = group.leads.filter(l => l.status === 'closed_won').length;
+              const contactedCount = group.leads.filter(l => l.status !== 'new' && l.status !== 'closed_lost').length;
+
+              return (
+                <div key={group.dateKey} className="flex flex-col gap-4 border-b border-border/30 pb-6 last:border-0 last:pb-0">
+                  {/* Group Header Row */}
+                  <div className="flex items-center gap-3">
+                    {/* Date Badge */}
+                    <div className="flex flex-col items-center justify-center w-11 h-12 border border-border bg-slate-900 dark:bg-slate-950 text-white rounded-lg shadow-sm overflow-hidden select-none flex-shrink-0">
+                      <div className="w-full bg-primary/20 text-primary text-[7px] font-extrabold py-0.2 text-center uppercase tracking-wider">
+                        {monthStr}
+                      </div>
+                      <div className="text-sm font-extrabold leading-none text-foreground pt-0.5">
+                        {dayStr}
+                      </div>
+                      <div className="text-[7px] text-muted-foreground/80 pb-0.5 font-mono">
+                        {yearStr}
+                      </div>
+                    </div>
+
+                    {/* Group Info */}
+                    <div>
+                      <h3 className="text-xs sm:text-sm font-bold text-foreground leading-tight">
+                        {weekdayStr}, {fullDateStr}
+                      </h3>
+                      <div className="text-[10px] sm:text-xs text-muted-foreground flex flex-wrap items-center gap-1.5 font-medium mt-0.5">
+                        <span>{totalCount} {totalCount === 1 ? 'prospect' : 'prospects'}</span>
+                        <span className="text-muted-foreground/60">•</span>
+                        <span className="flex items-center gap-1">
+                          <span className="h-1.5 w-1.5 rounded-full bg-green-500" />
+                          <span>{wonCount} won</span>
+                        </span>
+                        <span className="text-muted-foreground/60">•</span>
+                        <span className="flex items-center gap-1">
+                          <span className="h-1.5 w-1.5 rounded-full bg-yellow-500" />
+                          <span>{contactedCount} contacted</span>
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Group Leads Card Grid */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {group.leads.map((l) => (
+                      <div
+                        key={l.id}
+                        className="p-4 border border-border bg-card rounded-xl hover:shadow-md hover:border-primary/45 transition-all duration-150 flex flex-col justify-between gap-4 animate-card-in"
+                      >
+                        <div className="space-y-2">
+                          <div className="flex items-start justify-between gap-2">
+                            <h4 className="text-xs font-bold text-foreground flex items-center gap-1.5 leading-tight truncate">
+                              {unreadLeads.includes(l.id) && (
+                                <span className="h-1.5 w-1.5 rounded-full bg-danger animate-pulse flex-shrink-0" />
+                              )}
+                              <span className={unreadLeads.includes(l.id) ? 'font-extrabold' : ''}>
+                                {l.company_name}
+                              </span>
+                            </h4>
+                            <span className={`px-1.5 py-0.5 rounded text-[8px] font-bold uppercase tracking-wider border ${
+                              kanbanStatuses.find(ks => ks.value === l.status)?.color
+                            }`}>
+                              {kanbanStatuses.find(ks => ks.value === l.status)?.label || l.status}
+                            </span>
+                          </div>
+
+                          <div>
+                            <p className="text-xs text-muted-foreground font-semibold">{l.prospect_name}</p>
+                            <p className="text-[10px] text-muted-foreground/80 font-medium">{l.email}</p>
+                          </div>
+
+                          {l.notes ? (
+                            <p className="text-[10px] text-muted-foreground/60 italic line-clamp-2 leading-relaxed bg-muted/20 p-2 rounded border border-border/20">
+                              {l.notes}
+                            </p>
+                          ) : (
+                            <p className="text-[10px] text-muted-foreground/40 italic">No notes logged.</p>
+                          )}
+
+                          {l.tags && l.tags.length > 0 && (
+                            <div className="flex flex-wrap gap-1 pt-1">
+                              {l.tags.map((t, i) => (
+                                <span key={i} className="text-[8px] font-bold bg-primary/10 text-primary border border-primary/20 px-1.5 py-0.5 rounded-full capitalize">
+                                  {t.replace('_', ' ')}
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="flex items-center justify-between border-t border-border/40 pt-3 mt-1 text-[9px]">
+                          <span className={`inline-flex items-center px-1.5 py-0.2 rounded text-[8px] font-semibold border ${getUserColorClass(l.created_by)}`}>
+                            By: {getProfileName(l.created_by)}
+                          </span>
+
+                          <div className="flex items-center gap-2">
+                            <select
+                              value={l.status}
+                              onClick={(e) => e.stopPropagation()}
+                              onChange={(e) => handleMoveLeadStatus(l.id, e.target.value as LeadStatus)}
+                              className="bg-muted text-foreground border-none px-1.5 py-0.5 rounded text-[9px] cursor-pointer focus:outline-none font-medium hover:bg-muted/80 transition-colors"
+                            >
+                              <option value="new">Move: New</option>
+                              <option value="contacted">Move: Contact</option>
+                              <option value="qualified">Move: Qualify</option>
+                              <option value="proposal">Move: Propose</option>
+                              <option value="negotiation">Move: Negot.</option>
+                              <option value="closed_won">Move: Won</option>
+                              <option value="closed_lost">Move: Lost</option>
+                            </select>
+
+                            <button
+                              onClick={() => onNavigate(`leads/${l.id}`)}
+                              className="p-1 bg-card border border-border hover:bg-muted text-muted-foreground hover:text-foreground rounded transition-colors"
+                              title="View details"
+                            >
+                              <Eye className="h-3.5 w-3.5" />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            });
+          })()}
         </div>
       )}
     </div>
