@@ -391,13 +391,13 @@ class DBClient {
     const { data: { user } } = await client.auth.getUser();
     if (!user) throw new Error('Not authenticated');
 
+    let query = client.from('messages').select('*, message_read_receipts(*)');
     if (channelId) {
-      const { data, error } = await client.from('messages').select('*').eq('channel_id', channelId).order('created_at', { ascending: true });
+      const { data, error } = await query.eq('channel_id', channelId).order('created_at', { ascending: true });
       if (error) throw error;
       return data || [];
     } else if (receiverId) {
-      const { data, error } = await client.from('messages')
-        .select('*')
+      const { data, error } = await query
         .or(`and(sender_id.eq.${user.id},receiver_id.eq.${receiverId}),and(sender_id.eq.${receiverId},receiver_id.eq.${user.id})`)
         .order('created_at', { ascending: true });
       if (error) throw error;
@@ -487,6 +487,49 @@ class DBClient {
     if (!data || data.length === 0) {
       throw new Error('RLS policy violation: you cannot delete this message, or the database schema needs updating.');
     }
+  }
+
+  async markMessagesAsRead(channelId?: string, receiverId?: string): Promise<void> {
+    const client = this.getClient();
+    if (!client) {
+      mockDb.markMessagesAsRead(channelId, receiverId, mockDb.currentUser?.id);
+      return;
+    }
+
+    const { data: { user } } = await client.auth.getUser();
+    if (!user) return;
+
+    let query = client.from('messages').select('id');
+    if (channelId) {
+      query = query.eq('channel_id', channelId).neq('sender_id', user.id);
+    } else if (receiverId) {
+      query = query.eq('sender_id', receiverId).eq('receiver_id', user.id);
+    } else {
+      return;
+    }
+
+    const { data: messages, error } = await query;
+    if (error || !messages || messages.length === 0) return;
+
+    const messageIds = messages.map(m => m.id);
+
+    const { data: existingReceipts } = await client
+      .from('message_read_receipts')
+      .select('message_id')
+      .eq('user_id', user.id)
+      .in('message_id', messageIds);
+
+    const readMessageIds = new Set(existingReceipts?.map(r => r.message_id) || []);
+    const unreadMessageIds = messageIds.filter(id => !readMessageIds.has(id));
+
+    if (unreadMessageIds.length === 0) return;
+
+    const inserts = unreadMessageIds.map(id => ({
+      message_id: id,
+      user_id: user.id
+    }));
+
+    await client.from('message_read_receipts').insert(inserts);
   }
 
   async updateMessage(messageId: string, updates: Partial<Message>): Promise<Message> {

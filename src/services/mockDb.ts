@@ -537,6 +537,8 @@ class MemoryDB {
   // Active User Profile Simulation
   currentUser: Profile = MOCK_PROFILES[0]; // defaults to Head (Sarah Jenkins)
   
+  readReceipts: { message_id: string; user_id: string; read_at: string }[] = [];
+
   // PubSub listeners for realtime simulator
   private listeners: Set<(table: string, type: string, payload: any) => void> = new Set();
 
@@ -873,20 +875,22 @@ class MemoryDB {
   }
 
   getMessages(channelId?: string, receiverId?: string, userId?: string): Message[] {
+    let filteredMsgs: Message[] = [];
     if (channelId) {
-      return this.messages
-        .filter((m) => m.channel_id === channelId)
-        .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+      filteredMsgs = this.messages.filter((m) => m.channel_id === channelId);
     } else if (receiverId && userId) {
-      // DMs: message sender = user & receiver = other, OR sender = other & receiver = user
-      return this.messages
-        .filter((m) => !m.channel_id && (
-          (m.sender_id === userId && m.receiver_id === receiverId) ||
-          (m.sender_id === receiverId && m.receiver_id === userId)
-        ))
-        .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+      filteredMsgs = this.messages.filter((m) => !m.channel_id && (
+        (m.sender_id === userId && m.receiver_id === receiverId) ||
+        (m.sender_id === receiverId && m.receiver_id === userId)
+      ));
+    } else {
+      return [];
     }
-    return [];
+    const sorted = [...filteredMsgs].sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+    return sorted.map(msg => ({
+      ...msg,
+      message_read_receipts: this.readReceipts.filter(r => r.message_id === msg.id)
+    }));
   }
 
   sendMessage(channelId?: string, receiverId?: string, content?: string, attachments?: { name: string; url: string }[], senderId?: string): Message {
@@ -1029,6 +1033,27 @@ class MemoryDB {
     if (idx === -1) throw new Error('Note not found');
     this.personalNotes.splice(idx, 1);
     this.notify('personal_notes', 'delete', { id });
+  }
+
+  markMessagesAsRead(channelId?: string, receiverId?: string, currentUserId?: string) {
+    if (!currentUserId) return;
+    let msgs: Message[] = [];
+    if (channelId) {
+      msgs = this.messages.filter(m => m.channel_id === channelId && m.sender_id !== currentUserId);
+    } else if (receiverId) {
+      msgs = this.messages.filter(m => !m.channel_id && m.sender_id === receiverId && m.receiver_id === currentUserId);
+    }
+    msgs.forEach(m => {
+      const exists = this.readReceipts.some(r => r.message_id === m.id && r.user_id === currentUserId);
+      if (!exists) {
+        this.readReceipts.push({
+          message_id: m.id,
+          user_id: currentUserId,
+          read_at: new Date().toISOString()
+        });
+      }
+    });
+    this.notify('messages', 'update_all', { channelId, receiverId });
   }
 }
 

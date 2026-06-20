@@ -3,7 +3,7 @@ import { dbClient } from '../../services/dbClient';
 import { useAuth } from '../../context/AuthContext';
 import { supabase } from '../../services/supabase';
 import type { Message, Channel } from '../../types/database';
-import { Hash, Lock, Send, Search, Sparkles, Paperclip, Bold, Italic, Code, List, Loader2, Copy, Edit, Trash2, Filter } from 'lucide-react';
+import { Hash, Lock, Send, Search, Sparkles, Paperclip, Bold, Italic, Code, List, Loader2, Copy, Edit, Trash2, Filter, Check, CheckCheck } from 'lucide-react';
 
 const getNameColor = (name: string) => {
   const colors = [
@@ -36,7 +36,8 @@ export const MessagingView: React.FC = () => {
     isTokenExpired,
     setIsTokenExpired,
     refreshGoogleChat,
-    sendGoogleMessage
+    sendGoogleMessage,
+    isSimulator
   } = useAuth();
   
   const [channels, setChannels] = useState<Channel[]>([]);
@@ -181,9 +182,11 @@ export const MessagingView: React.FC = () => {
     if (currentChannelId) {
       const msgs = await dbClient.getMessages(currentChannelId);
       setMessages(msgs);
+      dbClient.markMessagesAsRead(currentChannelId, undefined).catch(console.error);
     } else if (activeDMUserId) {
       const msgs = await dbClient.getMessages(undefined, activeDMUserId);
       setMessages(msgs);
+      dbClient.markMessagesAsRead(undefined, activeDMUserId).catch(console.error);
     }
   };
 
@@ -411,28 +414,30 @@ export const MessagingView: React.FC = () => {
         fetchChannelData();
         
         // Colleague AI reply simulation! (Makes DMs feel extremely responsive and premium)
-        const recipient = profiles.find(p => p.id === activeDMUserId);
-        if (recipient && recipient.status === 'active') {
-          // Trigger typing after 1.5 seconds
-          setTimeout(() => {
-            setTypingUsers([recipient.full_name]);
-            
-            // Trigger reply message after 3.5 seconds
-            setTimeout(async () => {
-              setTypingUsers([]);
-              const autoReplies = [
-                `Hey! Thanks for pinging me. I've noted down your feedback on this campaign. Let's touch base in tomorrow's sync.`,
-                `Got it! Let me check the target lead sheet and update my notes on that.`,
-                `Awesome Outbound details! Shared this with Sarah. Let's keep moving.`,
-                `Hi there, I am currently wrapping up another target campaign but will look at this shortly.`
-              ];
-              const randomReply = autoReplies[Math.floor(Math.random() * autoReplies.length)];
+        if (isSimulator) {
+          const recipient = profiles.find(p => p.id === activeDMUserId);
+          if (recipient && recipient.status === 'active') {
+            // Trigger typing after 1.5 seconds
+            setTimeout(() => {
+              setTypingUsers([recipient.full_name]);
               
-              // Insert message into DB as other user
-              await dbClient.sendMessage(undefined, currentUser.id, randomReply, [], recipient.id);
-              fetchChannelData();
-            }, 2500);
-          }, 1000);
+              // Trigger reply message after 3.5 seconds
+              setTimeout(async () => {
+                setTypingUsers([]);
+                const autoReplies = [
+                  `Hey! Thanks for pinging me. I've noted down your feedback on this campaign. Let's touch base in tomorrow's sync.`,
+                  `Got it! Let me check the target lead sheet and update my notes on that.`,
+                  `Awesome Outbound details! Shared this with Sarah. Let's keep moving.`,
+                  `Hi there, I am currently wrapping up another target campaign but will look at this shortly.`
+                ];
+                const randomReply = autoReplies[Math.floor(Math.random() * autoReplies.length)];
+                
+                // Insert message into DB as other user
+                await dbClient.sendMessage(undefined, currentUser.id, randomReply, [], recipient.id);
+                fetchChannelData();
+              }, 2500);
+            }, 1000);
+          }
         }
       }
     } catch (err) {
@@ -597,6 +602,25 @@ export const MessagingView: React.FC = () => {
     body = body.replace(codeRegex, '<code class="bg-muted px-1 rounded text-xs font-mono">$1</code>');
 
     return <div dangerouslySetInnerHTML={{ __html: body }} className="rich-text-content leading-relaxed break-words" />;
+  };
+
+  const getReadReceiptStatus = (msg: Message) => {
+    const isDM = !msg.channel_id;
+    if (isDM) {
+      const recipientId = msg.receiver_id;
+      if (!recipientId) return 'sent';
+      const isRead = msg.message_read_receipts?.some((r) => String(r.user_id) === String(recipientId));
+      if (isRead) return 'read';
+      const recipient = profiles.find((p) => p.id === recipientId);
+      if (recipient?.presence === 'online') {
+        return 'delivered';
+      }
+      return 'sent';
+    } else {
+      const hasOtherRead = msg.message_read_receipts?.some((r) => String(r.user_id) !== String(msg.sender_id));
+      if (hasOtherRead) return 'read';
+      return 'delivered';
+    }
   };
 
   const headerDetails = getActiveHeaderDetails();
@@ -1130,11 +1154,27 @@ export const MessagingView: React.FC = () => {
                             }`}>
                               {isOutgoing ? 'You' : senderName}
                             </span>
-                            <span className={`block text-[9px] font-medium select-none ${
-                              isOutgoing ? 'text-blue-200/90' : 'text-muted-foreground'
-                            }`}>
-                              {new Date(msg.created_at || Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                            </span>
+                            <div className="flex items-center gap-1 justify-end">
+                              <span className={`block text-[9px] font-medium select-none ${
+                                isOutgoing ? 'text-blue-200/90' : 'text-muted-foreground'
+                              }`}>
+                                {new Date(msg.created_at || Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                              </span>
+                              {isOutgoing && (
+                                <span className="inline-flex flex-shrink-0 select-none">
+                                  {(() => {
+                                    const status = getReadReceiptStatus(msg);
+                                    if (status === 'read') {
+                                      return <span title="Read"><CheckCheck className="h-3.5 w-3.5 text-sky-200" style={{ color: '#7dd3fc' }} /></span>;
+                                    } else if (status === 'delivered') {
+                                      return <span title="Delivered"><CheckCheck className="h-3.5 w-3.5 text-blue-200/70" /></span>;
+                                    } else {
+                                      return <span title="Sent"><Check className="h-3.5 w-3.5 text-blue-200/70" /></span>;
+                                    }
+                                  })()}
+                                </span>
+                              )}
+                            </div>
                           </div>
 
                           {editingMessageId === msg.id ? (

@@ -115,6 +115,7 @@ export interface Message {
   attachments: { name: string; url: string }[];
   created_at: string;
   isOptimistic?: boolean;
+  message_read_receipts?: MessageReadReceipt[];
 }
 
 export interface MessageReadReceipt {
