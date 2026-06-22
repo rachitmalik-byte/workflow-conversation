@@ -276,6 +276,7 @@ CREATE TABLE public.reminders (
     status TEXT NOT NULL DEFAULT 'active',
     notification_type TEXT NOT NULL DEFAULT 'notification',
     is_company_event BOOLEAN DEFAULT false,
+    notes TEXT,
     created_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now())
 );
 

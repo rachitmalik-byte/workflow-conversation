@@ -98,6 +98,7 @@ export interface Reminder {
   notification_type?: 'notification' | 'alarm';
   created_at: string;
   is_company_event?: boolean;
+  notes?: string;
   // UI helper fields:
   invited_users?: string[]; // user IDs
 }

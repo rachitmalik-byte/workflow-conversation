@@ -24,7 +24,8 @@ export const RemindersView: React.FC = () => {
   const [dateTime, setDateTime] = useState('');
   const [offsetsInput, setOffsetsInput] = useState('15');
   const [isCustom, setIsCustom] = useState(false);
-  const [isCompanyEvent, setIsCompanyEvent] = useState(false);
+  const [reminderType, setReminderType] = useState<'personal' | 'team' | 'company'>('personal');
+  const [notes, setNotes] = useState('');
   const [notificationType, setNotificationType] = useState<'notification' | 'alarm'>('notification');
   
   // Associations
@@ -117,8 +118,9 @@ export const RemindersView: React.FC = () => {
       is_custom: isCustom,
       creator_id: currentUser?.id || 'unknown',
       status: 'active',
-      is_company_event: isCompanyEvent,
-      invited_users: invitedUsers,
+      is_company_event: reminderType === 'company',
+      invited_users: reminderType === 'team' ? invitedUsers : [],
+      notes: notes.trim() || undefined,
       created_at: new Date().toISOString()
     };
 
@@ -150,8 +152,9 @@ export const RemindersView: React.FC = () => {
         lead_id: leadId || undefined,
         task_id: taskId || undefined,
         company_name: companyName.trim() || undefined,
-        invited_users: invitedUsers,
-        is_company_event: isCompanyEvent
+        invited_users: reminderType === 'team' ? invitedUsers : [],
+        is_company_event: reminderType === 'company',
+        notes: notes.trim() || undefined
       });
 
       // Reset form states
@@ -159,7 +162,8 @@ export const RemindersView: React.FC = () => {
       setDateTime('');
       setOffsetsInput('15');
       setIsCustom(false);
-      setIsCompanyEvent(false);
+      setReminderType('personal');
+      setNotes('');
       setNotificationType('notification');
       setLeadId('');
       setTaskId('');
@@ -463,30 +467,79 @@ export const RemindersView: React.FC = () => {
               </div>
             </div>
 
-            <div className="flex flex-wrap gap-4 py-1">
-              <label className="flex items-center gap-2 text-xs font-semibold text-foreground cursor-pointer select-none">
-                <input
-                  type="checkbox"
-                  checked={isCustom}
-                  onChange={(e) => setIsCustom(e.target.checked)}
-                  className="h-4 w-4 border-border rounded text-primary focus:ring-primary cursor-pointer"
-                />
-                <span>Mark as Custom Campaign Reminder</span>
-              </label>
+            <div className="flex flex-col gap-4 py-1">
+               <label className="flex items-center gap-2 text-xs font-semibold text-foreground cursor-pointer select-none">
+                 <input
+                   type="checkbox"
+                   checked={isCustom}
+                   onChange={(e) => setIsCustom(e.target.checked)}
+                   className="h-4 w-4 border-border rounded text-primary focus:ring-primary cursor-pointer"
+                 />
+                 <span>Mark as Custom Campaign Reminder</span>
+               </label>
 
-              <label className="flex items-center gap-2 text-xs font-semibold text-foreground cursor-pointer select-none">
-                <input
-                  type="checkbox"
-                  checked={isCompanyEvent}
-                  onChange={(e) => {
-                    setIsCompanyEvent(e.target.checked);
-                    if (e.target.checked) setInvitedUsers([]); // Clear invited users for company events
-                  }}
-                  className="h-4 w-4 border-border rounded text-primary focus:ring-primary cursor-pointer"
-                />
-                <span className="text-emerald-600 dark:text-emerald-400 font-bold">🏢 Shared Company Event</span>
-              </label>
-            </div>
+               <div className="space-y-1.5">
+                 <label className="block text-xs font-semibold text-muted-foreground uppercase">
+                   Reminder Classification
+                 </label>
+                 <div className="flex flex-wrap gap-4 py-1">
+                   <label className="flex items-center gap-2 text-xs font-semibold text-foreground cursor-pointer select-none">
+                     <input
+                       type="radio"
+                       name="reminderType"
+                       value="personal"
+                       checked={reminderType === 'personal'}
+                       onChange={() => {
+                         setReminderType('personal');
+                         setInvitedUsers([]);
+                       }}
+                       className="h-4 w-4 border-border text-primary focus:ring-primary cursor-pointer"
+                     />
+                     <span>🔒 Personal Reminder</span>
+                   </label>
+
+                   <label className="flex items-center gap-2 text-xs font-semibold text-foreground cursor-pointer select-none">
+                     <input
+                       type="radio"
+                       name="reminderType"
+                       value="team"
+                       checked={reminderType === 'team'}
+                       onChange={() => setReminderType('team')}
+                       className="h-4 w-4 border-border text-primary focus:ring-primary cursor-pointer"
+                     />
+                     <span>👥 Shared with Team</span>
+                   </label>
+
+                   <label className="flex items-center gap-2 text-xs font-semibold text-foreground cursor-pointer select-none">
+                     <input
+                       type="radio"
+                       name="reminderType"
+                       value="company"
+                       checked={reminderType === 'company'}
+                       onChange={() => {
+                         setReminderType('company');
+                         setInvitedUsers([]);
+                       }}
+                       className="h-4 w-4 border-border text-primary focus:ring-primary cursor-pointer"
+                     />
+                     <span className="text-emerald-600 dark:text-emerald-400 font-bold">🏢 Shared Company Event</span>
+                   </label>
+                 </div>
+               </div>
+
+               <div className="space-y-1">
+                 <label className="block text-xs font-semibold text-muted-foreground uppercase">
+                   Reminder Note
+                 </label>
+                 <textarea
+                   value={notes}
+                   onChange={(e) => setNotes(e.target.value)}
+                   placeholder="Add notes or agenda for this alarm (e.g. Call details, meeting link, notes)..."
+                   rows={3}
+                   className="w-full text-xs bg-background border border-border text-foreground px-3 py-2 rounded focus:outline-none focus:border-primary"
+                 />
+               </div>
+             </div>
 
             <div className="space-y-1.5 py-1">
               <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wide">Alert Behavior</label>
@@ -578,51 +631,51 @@ export const RemindersView: React.FC = () => {
             <hr className="border-border" />
 
             {/* Teammate Invites */}
-            <div className={isCompanyEvent ? 'opacity-40 pointer-events-none' : ''}>
-              <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2 flex items-center gap-1">
-                <Users className="h-3.5 w-3.5" />
-                <span>Invite Teammates</span>
-              </h4>
-              <p className="text-[10px] text-muted-foreground mb-3">
-                Invited teammates will receive notification alerts and can view this reminder in their calendar boards.
-              </p>
-              
-              {/* Search Teammates */}
-              <div className="mb-3 max-w-xs">
-                <input
-                  type="text"
-                  disabled={isCompanyEvent}
-                  value={inviteSearchQuery}
-                  onChange={(e) => setInviteSearchQuery(e.target.value)}
-                  placeholder="Search colleagues..."
-                  className="w-full px-2.5 py-2 bg-background border border-border text-xs rounded focus:outline-none focus:border-primary text-foreground"
-                />
+            {reminderType === 'team' && (
+              <div className="space-y-3">
+                <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2 flex items-center gap-1">
+                  <Users className="h-3.5 w-3.5" />
+                  <span>Invite Teammates</span>
+                </h4>
+                <p className="text-[10px] text-muted-foreground mb-3">
+                  Invited teammates will receive notification alerts and can view this reminder in their calendar boards.
+                </p>
+                
+                {/* Search Teammates */}
+                <div className="mb-3 max-w-xs">
+                  <input
+                    type="text"
+                    value={inviteSearchQuery}
+                    onChange={(e) => setInviteSearchQuery(e.target.value)}
+                    placeholder="Search colleagues..."
+                    className="w-full px-2.5 py-2 bg-background border border-border text-xs rounded focus:outline-none focus:border-primary text-foreground"
+                  />
+                </div>
+                
+                <div className="flex flex-wrap gap-2">
+                  {profiles
+                    .filter((p) => p.id !== currentUser?.id && p.status === 'active' && p.full_name.toLowerCase().includes(inviteSearchQuery.toLowerCase()))
+                    .map((p) => {
+                      const isInvited = invitedUsers.includes(p.id);
+                      return (
+                        <button
+                          key={p.id}
+                          type="button"
+                          onClick={() => handleInviteToggle(p.id)}
+                          className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-full border transition-colors cursor-pointer ${
+                            isInvited
+                              ? 'bg-primary/10 border-primary text-primary'
+                              : 'bg-background border-border text-muted-foreground hover:bg-muted hover:text-foreground'
+                          }`}
+                        >
+                          {isInvited && <Check className="h-3.5 w-3.5" />}
+                          <span>{p.full_name}</span>
+                        </button>
+                      );
+                    })}
+                </div>
               </div>
-              
-              <div className="flex flex-wrap gap-2">
-                {profiles
-                  .filter((p) => p.id !== currentUser?.id && p.status === 'active' && p.full_name.toLowerCase().includes(inviteSearchQuery.toLowerCase()))
-                  .map((p) => {
-                    const isInvited = invitedUsers.includes(p.id);
-                    return (
-                      <button
-                        key={p.id}
-                        type="button"
-                        disabled={isCompanyEvent}
-                        onClick={() => handleInviteToggle(p.id)}
-                        className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-full border transition-colors cursor-pointer ${
-                          isInvited
-                            ? 'bg-primary/10 border-primary text-primary'
-                            : 'bg-background border-border text-muted-foreground hover:bg-muted hover:text-foreground'
-                        }`}
-                      >
-                        {isInvited && <Check className="h-3.5 w-3.5" />}
-                        <span>{p.full_name}</span>
-                      </button>
-                    );
-                  })}
-              </div>
-            </div>
+            )}
 
             {/* Actions */}
             <div className="flex items-center justify-end gap-3 pt-4 border-t border-border">
@@ -726,7 +779,7 @@ export const RemindersView: React.FC = () => {
                       onClick={() => handleCellClick(day.date)}
                       onDragOver={(e) => e.preventDefault()}
                       onDrop={(e) => handleDrop(e, day.date)}
-                      className={`min-h-[110px] p-2 flex flex-col justify-between transition-colors relative cursor-pointer group ${
+                      className={`min-h-[70px] lg:min-h-[90px] p-1.5 flex flex-col justify-between transition-colors relative cursor-pointer group ${
                         day.isCurrentMonth
                           ? isToday
                             ? 'bg-primary/5 dark:bg-primary/10'
@@ -734,9 +787,9 @@ export const RemindersView: React.FC = () => {
                           : 'bg-muted/15 opacity-60'
                       }`}
                     >
-                      <div className="flex items-center justify-between mb-1.5">
+                      <div className="flex items-center justify-between mb-1">
                         <span
-                          className={`text-xs font-bold px-1.5 py-0.5 rounded-full ${
+                          className={`text-[10px] lg:text-xs font-bold px-1 py-0.5 rounded-full ${
                             isToday
                               ? 'bg-primary text-white font-extrabold shadow-sm'
                               : 'text-foreground'
@@ -750,7 +803,7 @@ export const RemindersView: React.FC = () => {
                       </div>
 
                       {/* Reminder chips inside cell */}
-                      <div className="flex-1 space-y-1 overflow-y-auto max-h-[85px] scrollbar-none">
+                      <div className="flex-1 space-y-1 overflow-y-auto max-h-[45px] lg:max-h-[70px] scrollbar-none">
                         {dayReminders.map((rem) => {
                           const hasConflict = !!getConflictingEvent(rem, reminders);
                           
@@ -763,7 +816,7 @@ export const RemindersView: React.FC = () => {
                                 e.stopPropagation(); // prevent opening create form
                                 setSelectedReminder(rem);
                               }}
-                              className={`flex items-center justify-between px-2 py-1 text-[10px] font-bold border rounded shadow-sm transition-all truncate select-none cursor-grab active:cursor-grabbing ${getReminderCardStyle(
+                              className={`flex items-center justify-between px-1 py-0.5 lg:px-2 lg:py-1 text-[9px] lg:text-[10px] font-bold border rounded shadow-sm transition-all truncate select-none cursor-grab active:cursor-grabbing ${getReminderCardStyle(
                                 rem
                               )} ${hasConflict ? 'border-red-500 border-2' : ''}`}
                             >
@@ -981,6 +1034,14 @@ export const RemindersView: React.FC = () => {
                 </span>
               </div>
             </div>
+
+            {/* Notes details */}
+            {selectedReminder.notes && (
+              <div className="bg-muted/40 border border-border/60 p-3 rounded-lg text-xs space-y-1">
+                <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wide">Reminder Note</span>
+                <p className="text-foreground leading-relaxed whitespace-pre-wrap">{selectedReminder.notes}</p>
+              </div>
+            )}
 
             {/* Conflict details */}
             {(() => {

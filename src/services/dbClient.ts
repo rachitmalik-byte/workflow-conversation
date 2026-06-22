@@ -276,9 +276,29 @@ class DBClient {
     if (error) throw error;
 
     const reminders = data || [];
-    for (const rem of reminders) {
-      const { data: invites } = await client.from('reminder_invites').select('user_id').eq('reminder_id', rem.id);
-      rem.invited_users = invites?.map((i) => i.user_id) || [];
+    if (reminders.length > 0) {
+      const reminderIds = reminders.map((r) => r.id);
+      const { data: invites, error: invitesError } = await client
+        .from('reminder_invites')
+        .select('reminder_id, user_id')
+        .in('reminder_id', reminderIds);
+
+      if (!invitesError && invites) {
+        const inviteMap: Record<string, string[]> = {};
+        for (const inv of invites) {
+          if (!inviteMap[inv.reminder_id]) {
+            inviteMap[inv.reminder_id] = [];
+          }
+          inviteMap[inv.reminder_id].push(inv.user_id);
+        }
+        for (const rem of reminders) {
+          rem.invited_users = inviteMap[rem.id] || [];
+        }
+      } else {
+        for (const rem of reminders) {
+          rem.invited_users = [];
+        }
+      }
     }
     return reminders;
   }

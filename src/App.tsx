@@ -221,26 +221,47 @@ const MainAppContent: React.FC = () => {
   };
 
   // HTML5 Desktop Notification trigger
-  const showDesktopNotification = (title: string, body: string) => {
+  const showDesktopNotification = (title: string, body: string, reminderId?: string) => {
     const settings = dbClient.getNotificationSettings();
     if (!settings.desktopAlerts) return;
     if ('Notification' in window && Notification.permission === 'granted') {
       try {
-        new Notification(title, {
+        const notif = new Notification(title, {
           body,
           icon: '/favicon.ico',
-        });
+          tag: reminderId || 'general',
+          requireInteraction: reminderId ? true : false,
+          actions: reminderId ? [
+            { action: 'dismiss', title: 'Dismiss' },
+            { action: 'snooze', title: 'Snooze (5m)' }
+          ] : []
+        } as any);
+
+        if (reminderId) {
+          notif.addEventListener('action', (event: any) => {
+            if (event.action === 'dismiss') {
+              handleDismissAlarm(reminderId);
+            } else if (event.action === 'snooze') {
+              handleSnoozeAlarm(reminderId);
+            }
+            notif.close();
+          });
+          notif.onclick = () => {
+            window.focus();
+            notif.close();
+          };
+        }
       } catch (e) {
         console.error('Desktop notification failed:', e);
       }
     }
   };
 
-  const addToast = (title: string, body: string, type: 'info' | 'success' | 'warning' | 'danger' = 'info') => {
+  const addToast = (title: string, body: string, type: 'info' | 'success' | 'warning' | 'danger' = 'info', reminderId?: string) => {
     const id = Math.random().toString(36).substring(2, 9);
     setToasts((prev) => [...prev, { id, title, body, type }]);
     playChime();
-    showDesktopNotification(title, body);
+    showDesktopNotification(title, body, reminderId);
     setTimeout(() => {
       setToasts((prev) => prev.filter((t) => t.id !== id));
     }, 4000);
@@ -259,7 +280,7 @@ const MainAppContent: React.FC = () => {
       if (due.length > dueRemindersRef.current.length) {
         const newDue = due.filter(r => !dueRemindersRef.current.some(dr => dr.id === r.id));
         newDue.forEach(r => {
-          addToast('⚠️ Alarm Triggered!', r.title, 'danger');
+          addToast('⚠️ Alarm Triggered!', r.title, 'danger', r.id);
         });
       }
       
@@ -650,6 +671,20 @@ const MainAppContent: React.FC = () => {
     }
   };
 
+  const handleSnoozeAlarm = async (id: string, snoozeMinutes = 5) => {
+    try {
+      const snoozeTime = new Date(Date.now() + snoozeMinutes * 60000).toISOString();
+      await dbClient.updateReminder(id, { 
+        reminder_time: snoozeTime,
+        status: 'active' 
+      });
+      checkDueReminders();
+      addToast('⏰ Alarm Snoozed', `Snoozed for ${snoozeMinutes} minutes.`, 'info');
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="flex h-screen w-screen flex-col items-center justify-center gap-2 bg-background">
@@ -727,19 +762,27 @@ const MainAppContent: React.FC = () => {
       >
         {/* Real-time Reminder Alarm System Banner */}
         {dueReminders.length > 0 && (
-          <div className="bg-danger text-white px-4 py-2 flex items-center justify-between text-xs font-semibold animate-pulse z-50">
+          <div className="bg-danger text-white px-4 py-2 flex items-center justify-between text-xs font-semibold z-50 shadow-md">
             <div className="flex items-center gap-2 min-w-0">
-              <Volume2 className="h-4 w-4 flex-shrink-0" />
+              <Volume2 className="h-4 w-4 flex-shrink-0 animate-bounce" />
               <span className="truncate">
                 Alarm: "{dueReminders[0].title}" is past due!
               </span>
             </div>
-            <button
-              onClick={() => handleDismissAlarm(dueReminders[0].id)}
-              className="bg-white text-danger px-3 py-1 rounded text-[10px] font-bold hover:bg-slate-100 transition-colors shadow-sm ml-2 flex-shrink-0 cursor-pointer"
-            >
-              Dismiss
-            </button>
+            <div className="flex items-center gap-2 flex-shrink-0 ml-2">
+              <button
+                onClick={() => handleSnoozeAlarm(dueReminders[0].id)}
+                className="bg-white text-danger px-3 py-1 rounded text-[10px] font-bold hover:bg-slate-100 transition-colors shadow-sm cursor-pointer"
+              >
+                Snooze (5m)
+              </button>
+              <button
+                onClick={() => handleDismissAlarm(dueReminders[0].id)}
+                className="bg-danger border border-white/50 text-white px-3 py-1 rounded text-[10px] font-bold hover:bg-white/10 transition-colors shadow-sm cursor-pointer"
+              >
+                Dismiss
+              </button>
+            </div>
           </div>
         )}
 

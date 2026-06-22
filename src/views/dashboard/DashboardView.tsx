@@ -23,6 +23,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
   // Widget layout states
   const [widgetList, setWidgetList] = useState<string[]>([]);
   const [visibleWidgets, setVisibleWidgets] = useState<Record<string, boolean>>({});
+  const [widgetWidths, setWidgetWidths] = useState<Record<string, '1/3' | '1/2' | '2/3' | 'full'>>({});
   const [isConfiguring, setIsConfiguring] = useState(false);
 
   // Mini calendar states
@@ -34,20 +35,56 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
     
     // Load layout
     const savedLayout = localStorage.getItem(`relayhq_dash_layout_${currentUser.id}`);
-    const defaultLayout = ['pipeline-funnel', 'recent-activity', 'tasks-due', 'team-presence', 'quote-of-the-day', 'calendar-mini'];
+    const defaultLayout = currentUser.role === 'head'
+      ? ['head-metrics', 'lifecycle', 'teammates', 'upcoming-reminders', 'recent-activity', 'pipeline-funnel', 'calendar-mini', 'quote-of-the-day', 'team-presence']
+      : ['specialist-metrics', 'quick-add', 'lead-pipeline', 'tasks', 'upcoming-reminders', 'pipeline-funnel', 'calendar-mini', 'quote-of-the-day', 'team-presence'];
     setWidgetList(savedLayout ? JSON.parse(savedLayout) : defaultLayout);
 
     // Load visibility
     const savedVisibility = localStorage.getItem(`relayhq_dash_visibility_${currentUser.id}`);
-    const defaultVisibility = {
-      'pipeline-funnel': true,
-      'recent-activity': true,
-      'tasks-due': true,
-      'team-presence': true,
-      'quote-of-the-day': true,
-      'calendar-mini': true,
-    };
+    const defaultVisibility = currentUser.role === 'head'
+      ? {
+          'head-metrics': true,
+          'lifecycle': true,
+          'teammates': true,
+          'upcoming-reminders': true,
+          'recent-activity': true,
+          'pipeline-funnel': false,
+          'calendar-mini': false,
+          'quote-of-the-day': false,
+          'team-presence': false,
+        }
+      : {
+          'specialist-metrics': true,
+          'quick-add': true,
+          'lead-pipeline': true,
+          'tasks': true,
+          'upcoming-reminders': true,
+          'pipeline-funnel': false,
+          'calendar-mini': false,
+          'quote-of-the-day': false,
+          'team-presence': false,
+        };
     setVisibleWidgets(savedVisibility ? JSON.parse(savedVisibility) : defaultVisibility);
+
+    // Load widths
+    const savedWidths = localStorage.getItem(`relayhq_dash_widths_${currentUser.id}`);
+    const defaultWidths = {
+      'head-metrics': 'full',
+      'specialist-metrics': 'full',
+      'lifecycle': '2/3',
+      'teammates': '1/3',
+      'upcoming-reminders': currentUser.role === 'head' ? '1/2' : '1/3',
+      'recent-activity': '1/2',
+      'quick-add': '2/3',
+      'lead-pipeline': '2/3',
+      'tasks': '1/3',
+      'pipeline-funnel': '2/3',
+      'calendar-mini': '1/3',
+      'quote-of-the-day': '1/3',
+      'team-presence': '1/3',
+    };
+    setWidgetWidths(savedWidths ? JSON.parse(savedWidths) : defaultWidths);
   }, [currentUser]);
 
   const fetchDashboardData = async () => {
@@ -132,22 +169,79 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
     }
   };
 
+  const handleWidgetWidthChange = (id: string, width: '1/3' | '1/2' | '2/3' | 'full') => {
+    const updated = { ...widgetWidths, [id]: width };
+    setWidgetWidths(updated);
+    if (currentUser) {
+      localStorage.setItem(`relayhq_dash_widths_${currentUser.id}`, JSON.stringify(updated));
+    }
+  };
+
+  const getWidgetWidthClass = (id: string) => {
+    const w = widgetWidths[id] || '1/3';
+    switch (w) {
+      case '1/3': return 'col-span-6 lg:col-span-2 md:col-span-3';
+      case '1/2': return 'col-span-6 lg:col-span-3 md:col-span-3';
+      case '2/3': return 'col-span-6 lg:col-span-4 md:col-span-6';
+      case 'full':
+      default:
+        return 'col-span-6 lg:col-span-6 md:col-span-6';
+    }
+  };
+
   const resetDashboardLayout = () => {
-    const defaultLayout = ['pipeline-funnel', 'recent-activity', 'tasks-due', 'team-presence', 'quote-of-the-day', 'calendar-mini'];
-    const defaultVisibility = {
-      'pipeline-funnel': true,
-      'recent-activity': true,
-      'tasks-due': true,
-      'team-presence': true,
-      'quote-of-the-day': true,
-      'calendar-mini': true,
+    if (!currentUser) return;
+    const defaultLayout = currentUser.role === 'head'
+      ? ['head-metrics', 'lifecycle', 'teammates', 'upcoming-reminders', 'recent-activity', 'pipeline-funnel', 'calendar-mini', 'quote-of-the-day', 'team-presence']
+      : ['specialist-metrics', 'quick-add', 'lead-pipeline', 'tasks', 'upcoming-reminders', 'pipeline-funnel', 'calendar-mini', 'quote-of-the-day', 'team-presence'];
+
+    const defaultVisibility: Record<string, boolean> = currentUser.role === 'head'
+      ? {
+          'head-metrics': true,
+          'lifecycle': true,
+          'teammates': true,
+          'upcoming-reminders': true,
+          'recent-activity': true,
+          'pipeline-funnel': false,
+          'calendar-mini': false,
+          'quote-of-the-day': false,
+          'team-presence': false,
+        }
+      : {
+          'specialist-metrics': true,
+          'quick-add': true,
+          'lead-pipeline': true,
+          'tasks': true,
+          'upcoming-reminders': true,
+          'pipeline-funnel': false,
+          'calendar-mini': false,
+          'quote-of-the-day': false,
+          'team-presence': false,
+        };
+
+    const defaultWidths: Record<string, '1/3' | '1/2' | '2/3' | 'full'> = {
+      'head-metrics': 'full',
+      'specialist-metrics': 'full',
+      'lifecycle': '2/3',
+      'teammates': '1/3',
+      'upcoming-reminders': currentUser.role === 'head' ? '1/2' : '1/3',
+      'recent-activity': '1/2',
+      'quick-add': '2/3',
+      'lead-pipeline': '2/3',
+      'tasks': '1/3',
+      'pipeline-funnel': '2/3',
+      'calendar-mini': '1/3',
+      'quote-of-the-day': '1/3',
+      'team-presence': '1/3',
     };
+
     setWidgetList(defaultLayout);
     setVisibleWidgets(defaultVisibility);
-    if (currentUser) {
-      localStorage.setItem(`relayhq_dash_layout_${currentUser.id}`, JSON.stringify(defaultLayout));
-      localStorage.setItem(`relayhq_dash_visibility_${currentUser.id}`, JSON.stringify(defaultVisibility));
-    }
+    setWidgetWidths(defaultWidths);
+
+    localStorage.setItem(`relayhq_dash_layout_${currentUser.id}`, JSON.stringify(defaultLayout));
+    localStorage.setItem(`relayhq_dash_visibility_${currentUser.id}`, JSON.stringify(defaultVisibility));
+    localStorage.setItem(`relayhq_dash_widths_${currentUser.id}`, JSON.stringify(defaultWidths));
   };
 
   // Funnel Cumulative Calculation
@@ -586,17 +680,391 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
     );
   };
 
+  const renderHeadMetrics = () => {
+    const totalLeads = leads.length;
+    const wonLeads = leads.filter((l) => l.status === 'closed_won').length;
+    const conversionRate = totalLeads ? Math.round((wonLeads / totalLeads) * 100) : 0;
+
+    const totalTasks = tasks.length;
+    const completedTasks = tasks.filter((t) => t.status === 'done').length;
+    const taskCompletionRate = totalTasks ? Math.round((completedTasks / totalTasks) * 100) : 0;
+    const activeReminders = reminders.filter((r) => r.status === 'active').length;
+
+    return (
+      <div className={`space-y-2 ${isConfiguring ? 'border border-dashed border-primary/40 p-3 rounded-xl bg-card/50' : ''}`}>
+        {isConfiguring && (
+          <div className="flex items-center justify-between text-[10px] text-muted-foreground font-bold uppercase tracking-wider mb-2 border-b border-border/40 pb-1.5">
+            <span>Director Metrics Row</span>
+          </div>
+        )}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="border border-border bg-card p-4 rounded-xl shadow-sm">
+            <div className="flex items-center justify-between text-muted-foreground mb-2">
+              <span className="text-[10px] font-bold uppercase tracking-wider">Total Sales Leads</span>
+              <Briefcase className="h-4 w-4 text-primary" />
+            </div>
+            <p className="text-2xl font-bold text-foreground">{totalLeads}</p>
+            <p className="text-[10px] text-muted-foreground mt-1">Across all growth specialist portfolios</p>
+          </div>
+
+          <div className="border border-border bg-card p-4 rounded-xl shadow-sm">
+            <div className="flex items-center justify-between text-muted-foreground mb-2">
+              <span className="text-[10px] font-bold uppercase tracking-wider">Won Conversion Ratio</span>
+              <Award className="h-4 w-4 text-success animate-pulse" />
+            </div>
+            <p className="text-2xl font-bold text-foreground">{conversionRate}%</p>
+            <div className="w-full bg-muted h-1 rounded mt-2 overflow-hidden">
+              <div className="bg-success h-full" style={{ width: `${conversionRate}%` }} />
+            </div>
+          </div>
+
+          <div className="border border-border bg-card p-4 rounded-xl shadow-sm">
+            <div className="flex items-center justify-between text-muted-foreground mb-2">
+              <span className="text-[10px] font-bold uppercase tracking-wider">Task Completion</span>
+              <CheckSquare className="h-4 w-4 text-warning" />
+            </div>
+            <p className="text-2xl font-bold text-foreground">{taskCompletionRate}%</p>
+            <p className="text-[10px] text-muted-foreground mt-1">{completedTasks} of {totalTasks} checklist items done</p>
+          </div>
+
+          <div className="border border-border bg-card p-4 rounded-xl shadow-sm">
+            <div className="flex items-center justify-between text-muted-foreground mb-2">
+              <span className="text-[10px] font-bold uppercase tracking-wider">Active Reminders</span>
+              <Calendar className="h-4 w-4 text-danger" />
+            </div>
+            <p className="text-2xl font-bold text-foreground">{activeReminders}</p>
+            <p className="text-[10px] text-muted-foreground mt-1">Calendar alarms scheduled</p>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const renderSpecialistMetrics = () => {
+    const totalLeads = leads.length;
+    const myTasks = tasks.filter((t) => t.assignee_id === currentUser?.id || t.creator_id === currentUser?.id);
+    const todoTasks = myTasks.filter((t) => t.status !== 'done');
+    const myReminders = reminders.filter((r) => r.status === 'active');
+
+    return (
+      <div className={`space-y-2 ${isConfiguring ? 'border border-dashed border-primary/40 p-3 rounded-xl bg-card/50' : ''}`}>
+        {isConfiguring && (
+          <div className="flex items-center justify-between text-[10px] text-muted-foreground font-bold uppercase tracking-wider mb-2 border-b border-border/40 pb-1.5">
+            <span>Specialist Metrics Row</span>
+          </div>
+        )}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="border border-border bg-card p-4 rounded-xl shadow-sm flex items-center gap-3">
+            <div className="h-10 w-10 bg-primary/10 text-primary rounded-full flex items-center justify-center flex-shrink-0">
+              <Briefcase className="h-5 w-5" />
+            </div>
+            <div>
+              <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">My Portfolio Leads</p>
+              <p className="text-2xl font-bold text-foreground">{totalLeads}</p>
+            </div>
+          </div>
+
+          <div className="border border-border bg-card p-4 rounded-xl shadow-sm flex items-center gap-3">
+            <div className="h-10 w-10 bg-success/10 text-success rounded-full flex items-center justify-center flex-shrink-0">
+              <CheckSquare className="h-5 w-5" />
+            </div>
+            <div>
+              <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">Active To-Do Tasks</p>
+              <p className="text-2xl font-bold text-foreground">{todoTasks.length}</p>
+            </div>
+          </div>
+
+          <div className="border border-border bg-card p-4 rounded-xl shadow-sm flex items-center gap-3">
+            <div className="h-10 w-10 bg-danger/10 text-danger rounded-full flex items-center justify-center flex-shrink-0">
+              <Calendar className="h-5 w-5" />
+            </div>
+            <div>
+              <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">Scheduled Alarms</p>
+              <p className="text-2xl font-bold text-foreground">{myReminders.length}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const renderLifecycleWidget = () => {
+    const totalLeads = leads.length;
+    const statusCounts: Record<string, number> = {
+      new: 0,
+      contacted: 0,
+      qualified: 0,
+      proposal: 0,
+      negotiation: 0,
+      closed_won: 0,
+      closed_lost: 0
+    };
+    leads.forEach((l) => {
+      statusCounts[l.status] = (statusCounts[l.status] || 0) + 1;
+    });
+
+    return (
+      <div className="border border-border rounded-xl bg-card p-5 shadow-sm space-y-4 h-full">
+        <div className="flex items-center justify-between border-b border-border/40 pb-2.5">
+          <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+            <Activity className="h-4 w-4 text-primary" />
+            <span>Lead Lifecycle Distribution</span>
+          </h4>
+        </div>
+        
+        <div className="space-y-3 pt-1">
+          {Object.entries(statusCounts).map(([status, count]) => {
+            const percentage = totalLeads ? Math.round((count / totalLeads) * 100) : 0;
+            return (
+              <div key={status} className="space-y-1">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="capitalize font-medium text-foreground text-[11px]">{status.replace('_', ' ')}</span>
+                  <span className="text-muted-foreground font-semibold text-[10px]">{count} leads ({percentage}%)</span>
+                </div>
+                <div className="w-full bg-muted h-2 rounded overflow-hidden">
+                  <div
+                    className={`h-full ${
+                      status === 'closed_won' ? 'bg-success' :
+                      status === 'closed_lost' ? 'bg-danger' :
+                      status === 'qualified' ? 'bg-primary' : 'bg-slate-400'
+                    }`}
+                    style={{ width: `${percentage}%` }}
+                  />
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  };
+
+  const renderTeammatesWidget = () => {
+    const employeeLeadDistribution: Record<string, number> = {};
+    leads.forEach((l) => {
+      (l.assigned_users || []).forEach((uid) => {
+        const name = getProfileName(uid);
+        employeeLeadDistribution[name] = (employeeLeadDistribution[name] || 0) + 1;
+      });
+    });
+
+    return (
+      <div className="border border-border rounded-xl bg-card p-5 shadow-sm space-y-4 h-full">
+        <div className="flex items-center justify-between border-b border-border/40 pb-2.5">
+          <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+            <Users className="h-4 w-4 text-primary" />
+            <span>Teammate Portfolio Breakdown</span>
+          </h4>
+        </div>
+
+        <div className="space-y-3 pt-1 max-h-72 overflow-y-auto pr-1">
+          {Object.entries(employeeLeadDistribution).map(([name, count]) => (
+            <div key={name} className="flex items-center justify-between text-xs border-b border-border/40 pb-2 last:border-0 last:pb-0">
+              <div className="flex items-center gap-2">
+                <div className="h-5 w-5 bg-secondary text-white font-bold rounded flex items-center justify-center text-[9px] uppercase">
+                  {name.split(' ').map((n) => n[0]).join('')}
+                </div>
+                <span className="font-medium text-foreground">{name}</span>
+              </div>
+              <span className="bg-muted px-2 py-0.5 rounded font-semibold text-muted-foreground text-[10px]">
+                {count} leads
+              </span>
+            </div>
+          ))}
+          {Object.keys(employeeLeadDistribution).length === 0 && (
+            <p className="text-xs text-muted-foreground text-center py-4">No allocations logged.</p>
+          )}
+        </div>
+      </div>
+    );
+  };
+
+  const renderUpcomingRemindersWidget = () => {
+    const isHead = currentUser?.role === 'head';
+    const activeReminders = reminders.filter((r) => r.status === 'active');
+    
+    const displayReminders = isHead 
+      ? activeReminders 
+      : activeReminders.filter(r => r.creator_id === currentUser?.id || r.invited_users?.includes(currentUser?.id || ''));
+
+    return (
+      <div className="border border-border rounded-xl bg-card p-5 shadow-sm space-y-4 h-full">
+        <div className="flex items-center justify-between border-b border-border/40 pb-2.5">
+          <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+            <Calendar className="h-4 w-4 text-danger animate-pulse" />
+            <span>{isHead ? 'Upcoming Team Reminders' : 'Upcoming Reminders'}</span>
+          </h4>
+          <button onClick={() => onNavigate('reminders')} className="text-[10px] text-primary hover:underline flex items-center font-semibold">
+            <span>Scheduler</span>
+            <ChevronRight className="h-3 w-3" />
+          </button>
+        </div>
+
+        <div className="space-y-2.5 max-h-72 overflow-y-auto pr-1">
+          {displayReminders.slice(0, 5).map((rem) => (
+            <div key={rem.id} className="p-3 border border-border rounded bg-muted/20 text-xs flex justify-between items-start gap-4 hover:border-primary/30 transition-all cursor-pointer" onClick={() => onNavigate('reminders')}>
+              <div className="space-y-1">
+                <p className="font-semibold text-foreground leading-snug">{rem.title}</p>
+                <p className="text-[9px] text-muted-foreground">
+                  {new Date(rem.reminder_time).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })}
+                </p>
+              </div>
+              <span className="text-[8px] font-bold uppercase bg-primary/10 text-primary px-1.5 py-0.5 rounded flex-shrink-0">
+                {getProfileName(rem.creator_id).split(' ')[0]}
+              </span>
+            </div>
+          ))}
+          {displayReminders.length === 0 && (
+            <div className="text-center py-8 text-xs text-muted-foreground space-y-1">
+              <Calendar className="h-6 w-6 text-muted-foreground/30 mx-auto" />
+              <p className="font-semibold">No reminders scheduled</p>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
+
+  const renderQuickAddWidget = () => {
+    return (
+      <div className="border border-border rounded-xl bg-card p-6 shadow-sm space-y-4 flex flex-col items-center justify-center text-center py-8 h-full">
+        <div className="h-12 w-12 bg-primary/10 text-primary rounded-full flex items-center justify-center mb-1 animate-pulse">
+          <Briefcase className="h-6 w-6" />
+        </div>
+        <h3 className="text-sm font-bold text-foreground">Outbound Lead Command</h3>
+        <p className="text-xs text-muted-foreground max-w-sm">
+          Register a new outbound prospect with full details, company mappings, demand types, and reference screenshots.
+        </p>
+        <button
+          onClick={() => onNavigate('leads/new')}
+          className="mt-2 px-6 py-2 bg-primary hover:bg-primary/95 text-white rounded text-xs font-semibold shadow-sm transition-colors cursor-pointer"
+        >
+          Launch Lead Registration Form
+        </button>
+      </div>
+    );
+  };
+
+  const renderLeadPipelineWidget = () => {
+    return (
+      <div className="border border-border rounded-xl bg-card p-5 shadow-sm space-y-3 h-full">
+        <div className="flex items-center justify-between border-b border-border/40 pb-2.5">
+          <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">My Lead Pipeline</h3>
+          <button onClick={() => onNavigate('leads')} className="text-xs text-primary hover:underline flex items-center font-semibold">
+            <span>View Portfolio</span>
+            <ChevronRight className="h-3 w-3" />
+          </button>
+        </div>
+
+        <div className="divide-y divide-border/60 max-h-72 overflow-y-auto pr-1">
+          {leads.slice(0, 5).map((l) => (
+            <div key={l.id} className="py-2.5 flex items-center justify-between text-xs hover:bg-muted/10 px-1 rounded transition-colors cursor-pointer" onClick={() => onNavigate(`leads/${l.id}`)}>
+              <div>
+                <p className="font-bold text-foreground">{l.company_name}</p>
+                <p className="text-[10px] text-muted-foreground">{l.prospect_name}</p>
+              </div>
+              <span className="px-2 py-0.5 rounded bg-muted text-muted-foreground text-[9px] uppercase font-bold border border-border/40">
+                {l.status}
+              </span>
+            </div>
+          ))}
+          {leads.length === 0 && (
+            <p className="text-xs text-muted-foreground py-4 text-center">No leads in your portfolio. Use the form above!</p>
+          )}
+        </div>
+      </div>
+    );
+  };
+
+  const renderTasksWidget = () => {
+    const myTasks = tasks.filter((t) => t.assignee_id === currentUser?.id || t.creator_id === currentUser?.id);
+    const todoTasks = myTasks.filter((t) => t.status !== 'done');
+
+    return (
+      <div className="border border-border rounded-xl bg-card p-5 shadow-sm space-y-4 h-full">
+        <div className="flex items-center justify-between border-b border-border/40 pb-2.5">
+          <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+            <CheckSquare className="h-4 w-4 text-primary" />
+            <span>My Tasks List</span>
+          </h4>
+          <button onClick={() => onNavigate('tasks')} className="text-[10px] text-primary hover:underline flex items-center font-semibold">
+            <span>Task Center</span>
+            <ChevronRight className="h-3 w-3" />
+          </button>
+        </div>
+
+        <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
+          {todoTasks.slice(0, 5).map((t) => (
+            <div key={t.id} className="p-3 border border-border rounded bg-muted/20 text-xs flex justify-between items-start gap-3 hover:border-primary/30 transition-all cursor-pointer" onClick={() => onNavigate('tasks')}>
+              <div className="space-y-1">
+                <p className="font-bold text-foreground leading-snug">{t.title}</p>
+                {t.deadline && (
+                  <p className="text-[9px] text-muted-foreground">
+                    Due: {new Date(t.deadline).toLocaleDateString()}
+                  </p>
+                )}
+              </div>
+              <span className={`text-[8px] font-bold uppercase px-1.5 py-0.5 rounded ${
+                t.priority === 'high' ? 'bg-red-50 text-red-600 border border-red-200' :
+                t.priority === 'medium' ? 'bg-amber-50 text-amber-600 border border-amber-200' :
+                'bg-slate-100 text-slate-600 border border-slate-200'
+              }`}>
+                {t.priority}
+              </span>
+            </div>
+          ))}
+          {todoTasks.length === 0 && (
+            <div className="text-center py-8 text-xs text-muted-foreground space-y-1">
+              <CheckSquare className="h-6 w-6 text-muted-foreground/30 mx-auto" />
+              <p className="font-semibold">All tasks completed!</p>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
+
   const renderWidget = (id: string) => {
     if (!visibleWidgets[id]) return null;
 
     switch (id) {
-      case 'pipeline-funnel': return <React.Fragment key={id}>{renderFunnelWidget()}</React.Fragment>;
-      case 'recent-activity': return <React.Fragment key={id}>{renderRecentActivityWidget()}</React.Fragment>;
-      case 'tasks-due': return <React.Fragment key={id}>{renderTasksDueWidget()}</React.Fragment>;
-      case 'team-presence': return <React.Fragment key={id}>{renderTeamPresenceWidget()}</React.Fragment>;
-      case 'quote-of-the-day': return <React.Fragment key={id}>{renderQuoteWidget()}</React.Fragment>;
-      case 'calendar-mini': return <React.Fragment key={id}>{renderMiniCalendarWidget()}</React.Fragment>;
+      case 'head-metrics': return renderHeadMetrics();
+      case 'specialist-metrics': return renderSpecialistMetrics();
+      case 'lifecycle': return renderLifecycleWidget();
+      case 'teammates': return renderTeammatesWidget();
+      case 'upcoming-reminders': return renderUpcomingRemindersWidget();
+      case 'recent-activity': return renderRecentActivityWidget();
+      case 'quick-add': return renderQuickAddWidget();
+      case 'lead-pipeline': return renderLeadPipelineWidget();
+      case 'tasks': return renderTasksWidget();
+      case 'tasks-due': return renderTasksDueWidget();
+      
+      // Optional widgets:
+      case 'pipeline-funnel': return renderFunnelWidget();
+      case 'team-presence': return renderTeamPresenceWidget();
+      case 'quote-of-the-day': return renderQuoteWidget();
+      case 'calendar-mini': return renderMiniCalendarWidget();
       default: return null;
+    }
+  };
+
+  const getWidgetLabel = (id: string) => {
+    switch (id) {
+      case 'head-metrics': return 'Director Metrics Row';
+      case 'specialist-metrics': return 'Specialist Metrics Row';
+      case 'lifecycle': return 'Lead Lifecycle Distribution';
+      case 'teammates': return 'Teammate Portfolio Breakdown';
+      case 'upcoming-reminders': return currentUser?.role === 'head' ? 'Team Reminders' : 'Upcoming Reminders';
+      case 'recent-activity': return 'Outbound Activity Log';
+      case 'quick-add': return 'Quick Add Lead Card';
+      case 'lead-pipeline': return 'My Lead Pipeline';
+      case 'tasks': return 'My Tasks List';
+      case 'tasks-due': return 'Tasks Due Today';
+      case 'pipeline-funnel': return 'Lead Pipeline Funnel (SVG)';
+      case 'calendar-mini': return 'Calendar Mini-view Month Grid';
+      case 'quote-of-the-day': return 'Daily Outbound Quote';
+      case 'team-presence': return 'Teammate Collaboration Room';
+      default: return id;
     }
   };
 
@@ -669,66 +1137,23 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
             Toggle checkboxes to display widgets. Grab widget headers (<GripVertical className="h-3 w-3 inline text-muted-foreground" />) and drag them to re-arrange layout order.
           </p>
           <div className="grid grid-cols-2 gap-2.5 pt-1 text-xs">
-            <label className="flex items-center gap-2 cursor-pointer font-semibold">
-              <input
-                type="checkbox"
-                checked={visibleWidgets['pipeline-funnel'] ?? true}
-                onChange={() => toggleWidgetVisibility('pipeline-funnel')}
-                className="h-4 w-4 border-border rounded text-primary cursor-pointer"
-              />
-              <span>1. Pipeline conversion funnel</span>
-            </label>
-            <label className="flex items-center gap-2 cursor-pointer font-semibold">
-              <input
-                type="checkbox"
-                checked={visibleWidgets['recent-activity'] ?? true}
-                onChange={() => toggleWidgetVisibility('recent-activity')}
-                className="h-4 w-4 border-border rounded text-primary cursor-pointer"
-              />
-              <span>2. Recent campaign activities</span>
-            </label>
-            <label className="flex items-center gap-2 cursor-pointer font-semibold">
-              <input
-                type="checkbox"
-                checked={visibleWidgets['tasks-due'] ?? true}
-                onChange={() => toggleWidgetVisibility('tasks-due')}
-                className="h-4 w-4 border-border rounded text-primary cursor-pointer"
-              />
-              <span>3. Tasks due today</span>
-            </label>
-            <label className="flex items-center gap-2 cursor-pointer font-semibold">
-              <input
-                type="checkbox"
-                checked={visibleWidgets['team-presence'] ?? true}
-                onChange={() => toggleWidgetVisibility('team-presence')}
-                className="h-4 w-4 border-border rounded text-primary cursor-pointer"
-              />
-              <span>4. Team presence list</span>
-            </label>
-            <label className="flex items-center gap-2 cursor-pointer font-semibold">
-              <input
-                type="checkbox"
-                checked={visibleWidgets['quote-of-the-day'] ?? true}
-                onChange={() => toggleWidgetVisibility('quote-of-the-day')}
-                className="h-4 w-4 border-border rounded text-primary cursor-pointer"
-              />
-              <span>5. Sales Quote of the Day</span>
-            </label>
-            <label className="flex items-center gap-2 cursor-pointer font-semibold">
-              <input
-                type="checkbox"
-                checked={visibleWidgets['calendar-mini'] ?? true}
-                onChange={() => toggleWidgetVisibility('calendar-mini')}
-                className="h-4 w-4 border-border rounded text-primary cursor-pointer"
-              />
-              <span>6. Mini Month Calendar</span>
-            </label>
+            {widgetList.map((id) => (
+              <label key={id} className="flex items-center gap-2 cursor-pointer font-semibold text-foreground">
+                <input
+                  type="checkbox"
+                  checked={visibleWidgets[id] ?? true}
+                  onChange={() => toggleWidgetVisibility(id)}
+                  className="h-4 w-4 border-border rounded text-primary cursor-pointer"
+                />
+                <span>{getWidgetLabel(id)}</span>
+              </label>
+            ))}
           </div>
         </div>
       )}
 
       {/* Grid of Draggable Widgets */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-6 gap-6">
         {widgetList.map((widgetId) => {
           if (!visibleWidgets[widgetId]) return null;
 
@@ -739,27 +1164,37 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
               onDragStart={(e) => handleDragStart(e, widgetId)}
               onDragOver={handleDragOver}
               onDrop={(e) => handleDrop(e, widgetId)}
-              className={`relative flex flex-col group select-none transition-shadow ${
-                widgetId === 'pipeline-funnel' ? 'lg:col-span-2' : ''
-              }`}
+              className={`relative flex flex-col group select-none transition-shadow ${getWidgetWidthClass(widgetId)}`}
             >
-              {/* Drag handles bar overlay */}
-              <div className="absolute top-2.5 right-2 flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity z-10">
-                <button
-                  type="button"
-                  title="Drag from here to rearrange"
-                  className="p-1 hover:bg-muted text-muted-foreground hover:text-foreground rounded cursor-grab active:cursor-grabbing border border-border/40"
-                >
-                  <GripVertical className="h-3.5 w-3.5" />
-                </button>
-                <button
-                  onClick={() => toggleWidgetVisibility(widgetId)}
-                  title="Hide widget"
-                  className="p-1 hover:bg-muted text-muted-foreground hover:text-foreground rounded cursor-pointer border border-border/40"
-                >
-                  <EyeOff className="h-3.5 w-3.5" />
-                </button>
-              </div>
+              {/* Drag handles & resizing bar overlay when configuring */}
+              {isConfiguring && (
+                <div className="absolute top-2.5 right-2 flex items-center gap-1.5 z-20 bg-background/90 backdrop-blur-sm p-1 rounded-md border border-border shadow-sm">
+                  {/* Width selector dropdown */}
+                  <select
+                    value={widgetWidths[widgetId] || '1/3'}
+                    onChange={(e) => handleWidgetWidthChange(widgetId, e.target.value as any)}
+                    className="text-[9px] font-bold bg-background border border-border rounded px-1 py-0.5 focus:outline-none cursor-pointer"
+                  >
+                    <option value="1/3">1/3 Width</option>
+                    <option value="1/2">1/2 Width</option>
+                    <option value="2/3">2/3 Width</option>
+                    <option value="full">Full Width</option>
+                  </select>
+                  <div
+                    title="Drag from here to rearrange"
+                    className="p-1 hover:bg-muted text-muted-foreground hover:text-foreground rounded cursor-grab active:cursor-grabbing border border-border/40"
+                  >
+                    <GripVertical className="h-3.5 w-3.5" />
+                  </div>
+                  <button
+                    onClick={() => toggleWidgetVisibility(widgetId)}
+                    title="Hide widget"
+                    className="p-1 hover:bg-muted text-muted-foreground hover:text-foreground rounded cursor-pointer border border-border/40 text-danger"
+                  >
+                    <EyeOff className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+              )}
 
               {/* Render actual widget details */}
               {renderWidget(widgetId)}
