@@ -406,6 +406,18 @@ class DBClient {
     return [];
   }
 
+  async getAllMessages(): Promise<Message[]> {
+    const client = this.getClient();
+    if (!client) return mockDb.getAllMessages(mockDb.currentUser?.id);
+
+    const { data: { user } } = await client.auth.getUser();
+    if (!user) throw new Error('Not authenticated');
+
+    const { data, error } = await client.from('messages').select('*');
+    if (error) throw error;
+    return data || [];
+  }
+
   async triggerGoogleChatWebhook(content: string, senderName: string, channelName?: string) {
     const webhookUrl = localStorage.getItem('relayhq_google_chat_webhook_url');
     if (!webhookUrl) return;
@@ -784,6 +796,76 @@ class DBClient {
       console.error(`Failed to send Google Chat message to ${spaceName}:`, e);
       throw e;
     }
+  }
+
+  async toggleMessageReaction(messageId: string, emoji: string): Promise<Message> {
+    const client = this.getClient();
+    if (!client) return mockDb.toggleMessageReaction(messageId, emoji, mockDb.currentUser.id);
+
+    const { data: { user } } = await client.auth.getUser();
+    if (!user) throw new Error('Not authenticated');
+
+    const { data: msg, error: fetchErr } = await client.from('messages').select('reactions').eq('id', messageId).single();
+    if (fetchErr) throw fetchErr;
+
+    const reactions = msg?.reactions ? [...msg.reactions] : [];
+    const existing = reactions.find((r: any) => r.emoji === emoji);
+    if (existing) {
+      if (existing.user_ids.includes(user.id)) {
+        existing.user_ids = existing.user_ids.filter((id: string) => id !== user.id);
+      } else {
+        existing.user_ids.push(user.id);
+      }
+    } else {
+      reactions.push({ emoji, user_ids: [user.id] });
+    }
+
+    const cleaned = reactions.filter((r: any) => r.user_ids.length > 0);
+
+    const { data: updated, error: updateErr } = await client
+      .from('messages')
+      .update({ reactions: cleaned })
+      .eq('id', messageId)
+      .select()
+      .single();
+
+    if (updateErr) throw updateErr;
+    return updated;
+  }
+
+  async toggleLeadUpdateReaction(updateId: string, emoji: string): Promise<LeadUpdate> {
+    const client = this.getClient();
+    if (!client) return mockDb.toggleLeadUpdateReaction(updateId, emoji, mockDb.currentUser.id);
+
+    const { data: { user } } = await client.auth.getUser();
+    if (!user) throw new Error('Not authenticated');
+
+    const { data: upd, error: fetchErr } = await client.from('lead_updates').select('reactions').eq('id', updateId).single();
+    if (fetchErr) throw fetchErr;
+
+    const reactions = upd?.reactions ? [...upd.reactions] : [];
+    const existing = reactions.find((r: any) => r.emoji === emoji);
+    if (existing) {
+      if (existing.user_ids.includes(user.id)) {
+        existing.user_ids = existing.user_ids.filter((id: string) => id !== user.id);
+      } else {
+        existing.user_ids.push(user.id);
+      }
+    } else {
+      reactions.push({ emoji, user_ids: [user.id] });
+    }
+
+    const cleaned = reactions.filter((r: any) => r.user_ids.length > 0);
+
+    const { data: updated, error: updateErr } = await client
+      .from('lead_updates')
+      .update({ reactions: cleaned })
+      .eq('id', updateId)
+      .select()
+      .single();
+
+    if (updateErr) throw updateErr;
+    return updated;
   }
 }
 

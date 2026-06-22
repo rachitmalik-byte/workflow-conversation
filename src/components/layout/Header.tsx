@@ -4,6 +4,7 @@ import { NotificationCenter } from './NotificationCenter';
 import { PanelLeft, Sun, Moon } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
 import { dbClient } from '../../services/dbClient';
+import { GlobalSearch } from '../ui/GlobalSearch';
 
 interface HeaderProps {
   currentView: string;
@@ -96,6 +97,11 @@ export const Header: React.FC<HeaderProps> = ({ currentView, onNavigate, onToggl
             {getViewTitle()}
           </h1>
         </div>
+      </div>
+
+      {/* Global Search Component */}
+      <div className="flex-1 max-w-xs mx-4 hidden md:block">
+        <GlobalSearch onNavigate={onNavigate} />
       </div>
 
       <div className="flex items-center gap-4">

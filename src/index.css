@@ -779,24 +779,12 @@
     --primary-foreground: 210 40% 98%;
     --chat-bubble-out: 217.2 91.2% 54%;
     --chat-bubble-out-foreground: 210 40% 98%;
-    --background: 215 60% 98.5%;
-    --foreground: 215 50% 10%;
-    --card: 215 60% 100%;
-    --muted: 215 30% 94%;
-    --border: 215 30% 91%;
-    --accent: 217 91% 95%;
   }
   html[data-color-scheme="ocean"].dark {
     --primary: 217.2 91.2% 64%;
     --primary-foreground: 222.2 47.4% 11.2%;
     --chat-bubble-out: 217.2 91.2% 64%;
     --chat-bubble-out-foreground: 222.2 47.4% 11.2%;
-    --background: 215 50% 7%;
-    --foreground: 215 20% 90%;
-    --card: 215 45% 10%;
-    --muted: 215 30% 15%;
-    --border: 215 30% 17%;
-    --accent: 217 91% 20%;
   }
 
   /* Emerald Forest Green */
@@ -805,24 +793,12 @@
     --primary-foreground: 138.5 76.5% 96.7%;
     --chat-bubble-out: 142.4 71.8% 34%;
     --chat-bubble-out-foreground: 138.5 76.5% 96.7%;
-    --background: 140 30% 98.5%;
-    --foreground: 140 40% 10%;
-    --card: 140 30% 100%;
-    --muted: 140 20% 94%;
-    --border: 140 20% 91%;
-    --accent: 140 70% 94%;
   }
   html[data-color-scheme="forest"].dark {
     --primary: 142.4 71.8% 48%;
     --primary-foreground: 144 50% 10%;
     --chat-bubble-out: 142.4 71.8% 48%;
     --chat-bubble-out-foreground: 144 50% 10%;
-    --background: 140 35% 7%;
-    --foreground: 140 15% 90%;
-    --card: 140 30% 10%;
-    --muted: 140 20% 15%;
-    --border: 140 20% 17%;
-    --accent: 142 71% 15%;
   }
 
   /* Sunset Orange */
@@ -831,24 +807,12 @@
     --primary-foreground: 30 100% 97%;
     --chat-bubble-out: 15.6 100% 50%;
     --chat-bubble-out-foreground: 30 100% 97%;
-    --background: 20 40% 98.5%;
-    --foreground: 20 50% 10%;
-    --card: 20 40% 100%;
-    --muted: 20 25% 94%;
-    --border: 20 25% 91%;
-    --accent: 20 100% 95%;
   }
   html[data-color-scheme="sunset"].dark {
     --primary: 20.5 100% 60%;
     --primary-foreground: 20 50% 5%;
     --chat-bubble-out: 20.5 100% 60%;
     --chat-bubble-out-foreground: 20 50% 5%;
-    --background: 20 40% 6.5%;
-    --foreground: 20 20% 90%;
-    --card: 20 30% 10%;
-    --muted: 20 20% 15%;
-    --border: 20 20% 17%;
-    --accent: 20 100% 15%;
   }
 
   /* Royal Purple */
@@ -857,24 +821,12 @@
     --primary-foreground: 210 40% 98%;
     --chat-bubble-out: 262.1 83.3% 58%;
     --chat-bubble-out-foreground: 210 40% 98%;
-    --background: 260 40% 98.5%;
-    --foreground: 260 50% 10%;
-    --card: 260 40% 100%;
-    --muted: 260 25% 94%;
-    --border: 260 25% 91%;
-    --accent: 262 83% 95%;
   }
   html[data-color-scheme="royal"].dark {
     --primary: 263.4 80% 68%;
     --primary-foreground: 260 25% 6%;
     --chat-bubble-out: 263.4 80% 68%;
     --chat-bubble-out-foreground: 260 25% 6%;
-    --background: 260 40% 7%;
-    --foreground: 260 20% 90%;
-    --card: 260 30% 10%;
-    --muted: 260 20% 15%;
-    --border: 260 20% 17%;
-    --accent: 262 83% 15%;
   }
 
   /* Crimson Ruby */
@@ -883,26 +835,53 @@
     --primary-foreground: 355.6 100% 97.3%;
     --chat-bubble-out: 346.8 77.2% 49.8%;
     --chat-bubble-out-foreground: 355.6 100% 97.3%;
-    --background: 345 40% 98.5%;
-    --foreground: 345 50% 10%;
-    --card: 345 40% 100%;
-    --muted: 345 25% 94%;
-    --border: 345 25% 91%;
-    --accent: 346 77% 95%;
   }
   html[data-color-scheme="crimson"].dark {
     --primary: 346.8 90% 60%;
     --primary-foreground: 355.6 100% 10%;
     --chat-bubble-out: 346.8 90% 60%;
     --chat-bubble-out-foreground: 355.6 100% 10%;
-    --background: 345 40% 6.5%;
-    --foreground: 345 20% 90%;
-    --card: 345 30% 10%;
-    --muted: 345 20% 15%;
-    --border: 345 20% 17%;
-    --accent: 346 77% 15%;
   }
 
+  /* ==================== DYNAMIC BACKGROUND STYLES ==================== */
+  html[data-bg-style="sunset-grad"] body {
+    background-image: linear-gradient(135deg, #ffe5cf 0%, #fdb59f 100%) !important;
+    background-attachment: fixed;
+  }
+  html[data-bg-style="sunset-grad"].dark body {
+    background-image: linear-gradient(135deg, #1f120e 0%, #0d0604 100%) !important;
+    background-attachment: fixed;
+  }
+  html[data-bg-style="ocean-grad"] body {
+    background-image: linear-gradient(135deg, #dcf0ff 0%, #a9d6ff 100%) !important;
+    background-attachment: fixed;
+  }
+  html[data-bg-style="ocean-grad"].dark body {
+    background-image: linear-gradient(135deg, #091322 0%, #02060d 100%) !important;
+    background-attachment: fixed;
+  }
+  html[data-bg-style="forest-grad"] body {
+    background-image: linear-gradient(135deg, #ebfaeb 0%, #c2f0c2 100%) !important;
+    background-attachment: fixed;
+  }
+  html[data-bg-style="forest-grad"].dark body {
+    background-image: linear-gradient(135deg, #0a1708 0%, #030802 100%) !important;
+    background-attachment: fixed;
+  }
+  html[data-bg-style="midnight-grad"] body {
+    background-image: linear-gradient(135deg, #e4e7ff 0%, #d8c3ff 100%) !important;
+    background-attachment: fixed;
+  }
+  html[data-bg-style="midnight-grad"].dark body {
+    background-image: linear-gradient(135deg, #0d0c1c 0%, #160a22 100%) !important;
+    background-attachment: fixed;
+  }
+  html[data-bg-style="minimal-grid"] body {
+    background-color: hsl(var(--background)) !important;
+    background-image: radial-gradient(hsl(var(--border)) 1px, transparent 0) !important;
+    background-size: 24px 24px !important;
+    background-attachment: fixed;
+  }
 }
 
 @layer base {

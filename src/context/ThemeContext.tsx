@@ -16,6 +16,7 @@ export type ThemePreset =
 export type ThemeMode = 'light' | 'dark';
 export type FontFamily = 'inter' | 'outfit' | 'space-grotesk' | 'lora' | 'jetbrains-mono';
 export type ColorScheme = 'default' | 'ocean' | 'forest' | 'sunset' | 'royal' | 'crimson';
+export type BgStyle = 'default' | 'sunset-grad' | 'ocean-grad' | 'forest-grad' | 'midnight-grad' | 'minimal-grid';
 
 interface ThemeContextType {
   themePreset: ThemePreset;
@@ -26,6 +27,8 @@ interface ThemeContextType {
   setFontFamily: (font: FontFamily) => void;
   colorScheme: ColorScheme;
   setColorScheme: (scheme: ColorScheme) => void;
+  bgStyle: BgStyle;
+  setBgStyle: (style: BgStyle) => void;
   theme: ThemeMode; // Legacy support
   toggleTheme: () => void; // Legacy support
 }
@@ -54,14 +57,19 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     return (localStorage.getItem('relayhq_color_scheme') as ColorScheme) || 'default';
   });
 
+  const [bgStyle, setBgStyleState] = useState<BgStyle>(() => {
+    return (localStorage.getItem('relayhq_bg_style') as BgStyle) || 'default';
+  });
+
   useEffect(() => {
     const root = window.document.documentElement;
     
-    // Set preset, mode, font, and color scheme attributes
+    // Set preset, mode, font, color scheme, and background style attributes
     root.setAttribute('data-theme-preset', themePreset);
     root.setAttribute('data-theme-mode', themeMode);
     root.setAttribute('data-font', fontFamily);
     root.setAttribute('data-color-scheme', colorScheme);
+    root.setAttribute('data-bg-style', bgStyle);
     
     // Manage dark class for Tailwind
     if (themeMode === 'dark') {
@@ -69,7 +77,7 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     } else {
       root.classList.remove('dark');
     }
-  }, [themePreset, themeMode, fontFamily, colorScheme]);
+  }, [themePreset, themeMode, fontFamily, colorScheme, bgStyle]);
 
   const setThemePreset = (preset: ThemePreset) => {
     setThemePresetState(preset);
@@ -91,6 +99,11 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     localStorage.setItem('relayhq_color_scheme', scheme);
   };
 
+  const setBgStyle = (style: BgStyle) => {
+    setBgStyleState(style);
+    localStorage.setItem('relayhq_bg_style', style);
+  };
+
   const toggleTheme = () => {
     setThemeMode(themeMode === 'light' ? 'dark' : 'light');
   };
@@ -106,6 +119,8 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         setFontFamily,
         colorScheme,
         setColorScheme,
+        bgStyle,
+        setBgStyle,
         theme: themeMode,
         toggleTheme,
       }}

@@ -52,6 +52,7 @@ export interface LeadUpdate {
   user_id: string;
   content: string;
   created_at: string;
+  reactions?: { emoji: string; user_ids: string[] }[];
 }
 
 export interface LeadAttachment {
@@ -77,6 +78,10 @@ export interface Task {
   type: TaskType;
   attachments: { name: string; url: string }[];
   created_at: string;
+  recurrence_type?: 'none' | 'daily' | 'weekly' | 'monthly' | 'custom';
+  recurrence_interval?: number;
+  recurrence_end_date?: string;
+  parent_task_id?: string;
 }
 
 export interface Reminder {
@@ -92,6 +97,7 @@ export interface Reminder {
   status: 'active' | 'dismissed';
   notification_type?: 'notification' | 'alarm';
   created_at: string;
+  is_company_event?: boolean;
   // UI helper fields:
   invited_users?: string[]; // user IDs
 }
@@ -117,6 +123,7 @@ export interface Message {
   created_at: string;
   isOptimistic?: boolean;
   message_read_receipts?: MessageReadReceipt[];
+  reactions?: { emoji: string; user_ids: string[] }[];
 }
 
 export interface MessageReadReceipt {

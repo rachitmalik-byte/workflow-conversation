@@ -157,7 +157,7 @@ const playSynthAlarm = (sound: string) => {
 
 export const SettingsView: React.FC = () => {
   const { currentUser, profiles, switchUser, isDeveloper, isAdmin } = useAuth();
-  const { themePreset, setThemePreset, themeMode, setThemeMode, fontFamily, setFontFamily, colorScheme, setColorScheme } = useTheme();
+  const { themePreset, setThemePreset, themeMode, setThemeMode, fontFamily, setFontFamily, colorScheme, setColorScheme, bgStyle, setBgStyle } = useTheme();
   const [activeTab, setActiveTab] = useState<TabType>('profile');
 
   const hasOnboardAccess = isAdmin;
@@ -570,7 +570,26 @@ export const SettingsView: React.FC = () => {
                     Customize the look, colors, borders, and typography of your workspace. Changes apply immediately and persist.
                   </p>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-5 gap-4">
+                    {/* Background Style */}
+                    <div>
+                      <label className="block text-[10px] font-semibold text-muted-foreground uppercase tracking-wide mb-1.5">
+                        Background Style
+                      </label>
+                      <select
+                        value={bgStyle}
+                        onChange={(e) => setBgStyle(e.target.value as any)}
+                        className="w-full text-xs bg-background border border-border text-foreground px-3 py-2.5 rounded-lg focus:outline-none focus:border-primary cursor-pointer font-semibold animate-none"
+                      >
+                        <option value="default">🖥️ Preset Default</option>
+                        <option value="sunset-grad">🌅 Warm Sunset</option>
+                        <option value="ocean-grad">🌊 Sapphire Ocean</option>
+                        <option value="forest-grad">🌿 Emerald Forest</option>
+                        <option value="midnight-grad">🌌 Midnight Royal</option>
+                        <option value="minimal-grid">🏁 Clean Minimal Grid</option>
+                      </select>
+                    </div>
+
                     {/* Theme Preset */}
                     <div>
                       <label className="block text-[10px] font-semibold text-muted-foreground uppercase tracking-wide mb-1.5">

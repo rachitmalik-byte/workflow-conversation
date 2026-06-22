@@ -6,6 +6,7 @@ import {
   ArrowLeft, Edit, Trash2, Send, Paperclip, Calendar, Building, Phone, Mail,
   Link, AlertTriangle, Loader2, Eye, EyeOff, Bold, Italic, Code, List, Check
 } from 'lucide-react';
+import { MentionTextArea } from '../../components/ui/MentionInput';
 
 interface DetailPageProps {
   leadId: string;
@@ -40,6 +41,7 @@ export const DetailPage: React.FC<DetailPageProps> = ({ leadId, onNavigate }) =>
 
   const [chatDragOver, setChatDragOver] = useState(false);
   const [chatWidth, setChatWidth] = useState(380);
+  const [activeReactionPickerId, setActiveReactionPickerId] = useState<string | null>(null);
   const isResizingRef = useRef(false);
 
   const startResizing = (e: React.MouseEvent) => {
@@ -283,6 +285,15 @@ export const DetailPage: React.FC<DetailPageProps> = ({ leadId, onNavigate }) =>
     if (!lead || !updateText.trim()) return;
     try { await dbClient.createLeadUpdate(lead.id, updateText.trim()); setUpdateText(''); await fetchLeadData(); }
     catch (err: any) { alert(err.message || 'Failed to post update.'); }
+  };
+
+  const handleToggleLeadUpdateReaction = async (updateId: string, emoji: string) => {
+    try {
+      await dbClient.toggleLeadUpdateReaction(updateId, emoji);
+      await fetchLeadData();
+    } catch (err: any) {
+      alert(err.message || 'Failed to toggle reaction.');
+    }
   };
 
   const handleChatPaste = async (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
@@ -743,7 +754,7 @@ export const DetailPage: React.FC<DetailPageProps> = ({ leadId, onNavigate }) =>
                         >
                           {senderInitials}
                         </div>
-                        <div className={`flex flex-col gap-0.5 max-w-[82%] ${isMe ? 'items-end' : 'items-start'}`}>
+                        <div className={`flex flex-col gap-0.5 max-w-[82%] ${isMe ? 'items-end' : 'items-start'} group relative`}>
                           <span className="text-[10px] font-semibold text-muted-foreground px-1">
                             {isMe ? 'You' : senderName}
                           </span>
@@ -756,7 +767,57 @@ export const DetailPage: React.FC<DetailPageProps> = ({ leadId, onNavigate }) =>
                               {parseMarkdown(update.content, isMe)}
                             </div>
                           </div>
-                          <span className="text-[9px] text-muted-foreground px-1">{timeStr}</span>
+                          
+                          {/* Reactions badges */}
+                          {update.reactions && update.reactions.length > 0 && (
+                            <div className="flex flex-wrap gap-1 mt-1 px-1">
+                              {update.reactions.map((r) => {
+                                const hasReacted = r.user_ids.includes(currentUser?.id || '');
+                                return (
+                                  <button
+                                    key={r.emoji}
+                                    onClick={() => handleToggleLeadUpdateReaction(update.id, r.emoji)}
+                                    className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-bold border transition-colors cursor-pointer ${
+                                      hasReacted
+                                        ? 'bg-primary/10 border-primary/30 text-primary hover:bg-primary/15'
+                                        : 'bg-muted/40 border-border/60 text-muted-foreground hover:bg-muted/60 hover:text-foreground'
+                                    }`}
+                                  >
+                                    <span>{r.emoji}</span>
+                                    <span>{r.user_ids.length}</span>
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          )}
+
+                          {/* Reaction Trigger Button */}
+                          <div className="flex items-center gap-1.5 mt-0.5 px-1">
+                            <button
+                              onClick={() => setActiveReactionPickerId(activeReactionPickerId === update.id ? null : update.id)}
+                              className="text-[9px] text-muted-foreground hover:text-foreground font-bold flex items-center gap-0.5 px-1 py-0.5 rounded bg-muted/20 hover:bg-muted/40 transition-colors cursor-pointer"
+                            >
+                              <span>+</span> React
+                            </button>
+                            
+                            {activeReactionPickerId === update.id && (
+                              <div className="absolute z-30 bottom-full mb-1 flex items-center gap-1 bg-card border border-border px-2 py-1 rounded-full shadow-lg">
+                                {['👍', '✅', '👀', '🔥', '❓'].map((emoji) => (
+                                  <button
+                                    key={emoji}
+                                    onClick={() => {
+                                      handleToggleLeadUpdateReaction(update.id, emoji);
+                                      setActiveReactionPickerId(null);
+                                    }}
+                                    className="hover:scale-125 transition-transform px-1 cursor-pointer text-xs"
+                                  >
+                                    {emoji}
+                                  </button>
+                                ))}
+                              </div>
+                            )}
+                            <span className="text-[9px] text-muted-foreground">{timeStr}</span>
+                          </div>
                         </div>
                       </div>
                     )}
@@ -771,9 +832,9 @@ export const DetailPage: React.FC<DetailPageProps> = ({ leadId, onNavigate }) =>
           {/* Chat Input */}
           <div className="flex-shrink-0 border-t border-border p-3 bg-card">
             <div className="flex gap-2 items-end">
-              <textarea
+              <MentionTextArea
                 value={updateText}
-                onChange={(e) => setUpdateText(e.target.value)}
+                onChangeValue={setUpdateText}
                 onKeyDown={handleChatKeyDown}
                 onPaste={handleChatPaste}
                 placeholder="Type a message… Enter to send"
@@ -1017,10 +1078,10 @@ function RichTextField({
       </div>
 
       {isEditing ? (
-        <textarea
+        <MentionTextArea
           ref={textareaRef as React.RefObject<HTMLTextAreaElement>}
           value={value}
-          onChange={(e) => { onChange(e.target.value); adjustHeight(e.target); }}
+          onChangeValue={(val) => { onChange(val); setTimeout(() => { if (textareaRef.current) adjustHeight(textareaRef.current); }, 0); }}
           onKeyDown={onKeyDown}
           onPaste={onPaste}
           onBlur={handleBlur}

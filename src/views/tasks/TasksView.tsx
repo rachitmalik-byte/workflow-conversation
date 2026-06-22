@@ -24,8 +24,15 @@ export const TasksView: React.FC = () => {
   const [taskAttachments, setTaskAttachments] = useState<{ name: string; url: string }[]>([]);
   const [attachmentName, setAttachmentName] = useState('');
 
+  // Recurrence states
+  const [recurrenceType, setRecurrenceType] = useState<'none' | 'daily' | 'weekly' | 'monthly' | 'custom'>('none');
+  const [recurrenceInterval, setRecurrenceInterval] = useState(1);
+  const [recurrenceEndDate, setRecurrenceEndDate] = useState('');
+  const [selectedTaskIndex, setSelectedTaskIndex] = useState(-1);
+
   useEffect(() => {
     localStorage.setItem('relayhq_tasks_active_tab', activeTab);
+    setSelectedTaskIndex(-1); // Reset highlight when changing tab
   }, [activeTab]);
 
   const [error, setError] = useState<string | null>(null);
@@ -99,6 +106,9 @@ export const TasksView: React.FC = () => {
         reminder_offsets: offsets,
         status: 'todo',
         attachments: taskAttachments,
+        recurrence_type: recurrenceType,
+        recurrence_interval: recurrenceInterval,
+        recurrence_end_date: recurrenceEndDate ? new Date(recurrenceEndDate).toISOString() : undefined
       });
 
       // Reset form
@@ -110,6 +120,9 @@ export const TasksView: React.FC = () => {
       setOffsetsInput('15, 30');
       setTaskAttachments([]);
       setAssigneeIds([]);
+      setRecurrenceType('none');
+      setRecurrenceInterval(1);
+      setRecurrenceEndDate('');
       setError(null);
       setIsCreating(false);
       fetchTasks();
@@ -158,6 +171,75 @@ export const TasksView: React.FC = () => {
     if (activeTab === 'all') return true;
     return t.type === activeTab;
   });
+
+  // Listen to keyboard command events
+  useEffect(() => {
+    const handleCreate = () => {
+      setIsCreating(true);
+    };
+
+    const handleDown = () => {
+      if (isCreating) return;
+      setSelectedTaskIndex((prev) => {
+        if (filteredTasks.length === 0) return -1;
+        return (prev + 1) % filteredTasks.length;
+      });
+    };
+
+    const handleUp = () => {
+      if (isCreating) return;
+      setSelectedTaskIndex((prev) => {
+        if (filteredTasks.length === 0) return -1;
+        return prev <= 0 ? filteredTasks.length - 1 : prev - 1;
+      });
+    };
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (isCreating) return;
+      const activeTag = document.activeElement?.tagName.toLowerCase();
+      if (activeTag === 'input' || activeTag === 'textarea' || document.activeElement?.getAttribute('contenteditable') === 'true') {
+        return;
+      }
+
+      if (e.key === 'Enter' || e.key === ' ') {
+        if (selectedTaskIndex >= 0 && selectedTaskIndex < filteredTasks.length) {
+          e.preventDefault();
+          const task = filteredTasks[selectedTaskIndex];
+          handleToggleStatus(task.id, task.status);
+        }
+      }
+      
+      if (e.key === 'Delete' || e.key === 'Backspace') {
+        if (selectedTaskIndex >= 0 && selectedTaskIndex < filteredTasks.length) {
+          e.preventDefault();
+          const task = filteredTasks[selectedTaskIndex];
+          handleDeleteTask(task.id);
+        }
+      }
+    };
+
+    window.addEventListener('command-create-task', handleCreate);
+    window.addEventListener('command-navigate-down', handleDown);
+    window.addEventListener('command-navigate-up', handleUp);
+    window.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      window.removeEventListener('command-create-task', handleCreate);
+      window.removeEventListener('command-navigate-down', handleDown);
+      window.removeEventListener('command-navigate-up', handleUp);
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [filteredTasks, selectedTaskIndex, isCreating]);
+
+  // Scroll highlighted task into view
+  useEffect(() => {
+    if (selectedTaskIndex >= 0 && filteredTasks[selectedTaskIndex]) {
+      const el = document.getElementById(`task-card-${filteredTasks[selectedTaskIndex].id}`);
+      if (el) {
+        el.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+      }
+    }
+  }, [selectedTaskIndex]);
 
   return (
     <div className="p-4 sm:p-6 space-y-6 w-full max-w-[1600px] mx-auto">
@@ -322,6 +404,54 @@ export const TasksView: React.FC = () => {
               </div>
             </div>
 
+            {/* Recurrence Options */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 border-t border-border/40 pt-3">
+              <div>
+                <label className="block text-xs font-medium text-muted-foreground mb-1 font-semibold uppercase tracking-wider">
+                  🔄 Recurrence Type
+                </label>
+                <select
+                  value={recurrenceType}
+                  onChange={(e) => setRecurrenceType(e.target.value as any)}
+                  className="w-full text-xs bg-background border border-border text-foreground px-3 py-2 rounded focus:outline-none focus:border-primary cursor-pointer font-medium"
+                >
+                  <option value="none">None (One-time)</option>
+                  <option value="daily">Daily</option>
+                  <option value="weekly">Weekly</option>
+                  <option value="monthly">Monthly</option>
+                </select>
+              </div>
+
+              {recurrenceType !== 'none' && (
+                <>
+                  <div>
+                    <label className="block text-xs font-medium text-muted-foreground mb-1 font-semibold uppercase tracking-wider">
+                      Repeat Every (Interval)
+                    </label>
+                    <input
+                      type="number"
+                      min={1}
+                      value={recurrenceInterval}
+                      onChange={(e) => setRecurrenceInterval(parseInt(e.target.value, 10) || 1)}
+                      className="w-full text-xs bg-background border border-border text-foreground px-3 py-2 rounded focus:outline-none focus:border-primary"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-medium text-muted-foreground mb-1 font-semibold uppercase tracking-wider">
+                      End Date (Optional)
+                    </label>
+                    <input
+                      type="date"
+                      value={recurrenceEndDate}
+                      onChange={(e) => setRecurrenceEndDate(e.target.value)}
+                      className="w-full text-xs bg-background border border-border text-foreground px-3 py-2 rounded focus:outline-none focus:border-primary cursor-pointer"
+                    />
+                  </div>
+                </>
+              )}
+            </div>
+
             {/* Task Attachments Sub-list */}
             <div className="pt-2">
               <label className="block text-xs font-medium text-muted-foreground mb-1">
@@ -421,12 +551,18 @@ export const TasksView: React.FC = () => {
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {filteredTasks.map((task) => {
+              {filteredTasks.map((task, idx) => {
+                const isSelected = selectedTaskIndex === idx;
                 return (
                   <div
                     key={task.id}
-                    className={`border border-border bg-card p-4 rounded-lg shadow-sm flex items-start gap-3 transition-colors ${
-                      task.status === 'done' ? 'opacity-75 bg-muted/20' : ''
+                    id={`task-card-${task.id}`}
+                    className={`border p-4 rounded-lg shadow-sm flex items-start gap-3 transition-all duration-200 ${
+                      task.status === 'done' ? 'opacity-75 bg-muted/20' : 'bg-card'
+                    } ${
+                      isSelected 
+                        ? 'border-primary ring-2 ring-primary/20 bg-primary/5 shadow-md scale-[1.01]' 
+                        : 'border-border'
                     }`}
                   >
                     {/* Status Toggle Box */}
@@ -478,6 +614,12 @@ export const TasksView: React.FC = () => {
                           <span className="flex items-center gap-1 text-muted-foreground">
                             <Clock className="h-3 w-3" />
                             <span>Due {new Date(task.deadline).toLocaleDateString()}</span>
+                          </span>
+                        )}
+
+                        {task.recurrence_type && task.recurrence_type !== 'none' && (
+                          <span className="flex items-center gap-1 text-primary bg-primary/10 border border-primary/20 px-1.5 py-0.5 rounded font-bold uppercase text-[9px] tracking-wide">
+                            🔄 {task.recurrence_type} {task.recurrence_interval && task.recurrence_interval > 1 ? `(every ${task.recurrence_interval})` : ''}
                           </span>
                         )}
 

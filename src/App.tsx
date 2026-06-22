@@ -19,6 +19,8 @@ import { dbClient } from './services/dbClient';
 import { TutorialTour } from './components/ui/TutorialTour';
 import type { Reminder } from './types/database';
 import { Volume2 } from 'lucide-react';
+import { CommandPalette } from './components/ui/CommandPalette';
+import { KeyboardShortcuts } from './components/ui/KeyboardShortcuts';
 
 // Shared lazily initialized AudioContext to bypass autoplay policies
 let sharedAudioCtx: AudioContext | null = null;
@@ -34,6 +36,9 @@ const getAudioCtx = () => {
 
 const MainAppContent: React.FC = () => {
   const { currentUser, profiles, isLoading, bypassAuth } = useAuth();
+  
+  const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
+  const [isShortcutsGuideOpen, setIsShortcutsGuideOpen] = useState(false);
   
   // Custom router state
   const [currentView, setCurrentViewInternal] = useState(() => {
@@ -555,6 +560,87 @@ const MainAppContent: React.FC = () => {
     };
   }, [currentUser]);
 
+  // Global Keyboard Shortcuts Listener
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const activeTag = document.activeElement?.tagName.toLowerCase();
+      if (
+        activeTag === 'input' ||
+        activeTag === 'textarea' ||
+        document.activeElement?.getAttribute('contenteditable') === 'true'
+      ) {
+        return;
+      }
+
+      // Ctrl+K -> Command Palette
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        setIsCommandPaletteOpen(prev => !prev);
+        return;
+      }
+
+      // ? -> Shortcuts Guide
+      if (e.key === '?') {
+        e.preventDefault();
+        setIsShortcutsGuideOpen(prev => !prev);
+        return;
+      }
+
+      // Jump Views (1-7)
+      const viewsList = ['dashboard', 'leads', 'tasks', 'reminders', 'notes', 'messaging', 'settings'];
+      if (!isNaN(Number(e.key))) {
+        const num = Number(e.key);
+        if (num >= 1 && num <= 7) {
+          e.preventDefault();
+          setCurrentView(viewsList[num - 1]);
+          return;
+        }
+      }
+
+      // N -> New Lead
+      if (e.key.toLowerCase() === 'n') {
+        e.preventDefault();
+        setCurrentView('leads/new');
+        return;
+      }
+
+      // T -> New Task
+      if (e.key.toLowerCase() === 't') {
+        e.preventDefault();
+        setCurrentView('tasks');
+        setTimeout(() => {
+          window.dispatchEvent(new CustomEvent('command-create-task'));
+        }, 100);
+        return;
+      }
+
+      // R -> New Reminder
+      if (e.key.toLowerCase() === 'r') {
+        e.preventDefault();
+        setCurrentView('reminders');
+        setTimeout(() => {
+          window.dispatchEvent(new CustomEvent('command-create-reminder'));
+        }, 100);
+        return;
+      }
+
+      // J/K Navigation
+      if (e.key.toLowerCase() === 'j') {
+        e.preventDefault();
+        window.dispatchEvent(new CustomEvent('command-navigate-down'));
+        return;
+      }
+      if (e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        window.dispatchEvent(new CustomEvent('command-navigate-up'));
+        return;
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [currentUser]);
+
   const handleDismissAlarm = async (id: string) => {
     try {
       await dbClient.updateReminder(id, { status: 'dismissed' });
@@ -694,6 +780,16 @@ const MainAppContent: React.FC = () => {
           </div>
         ))}
       </div>
+
+      <CommandPalette
+        isOpen={isCommandPaletteOpen}
+        onClose={() => setIsCommandPaletteOpen(false)}
+        onNavigate={setCurrentView}
+      />
+      <KeyboardShortcuts
+        isOpen={isShortcutsGuideOpen}
+        onClose={() => setIsShortcutsGuideOpen(false)}
+      />
     </div>
   );
 };

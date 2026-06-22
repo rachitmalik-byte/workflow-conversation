@@ -57,16 +57,16 @@ export const LeadsView: React.FC<LeadsViewProps> = ({ onNavigate }) => {
     };
   }, []);
 
-  const getUserColorClass = (uid: string) => {
+  const getUserColorStyle = (uid: string) => {
     const colors = [
-      'bg-blue-50 text-blue-600 border-blue-200 dark:bg-blue-500/10 dark:text-blue-400 dark:border-blue-500/20',
-      'bg-emerald-50 text-emerald-600 border-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/20',
-      'bg-indigo-50 text-indigo-600 border-indigo-200 dark:bg-indigo-500/10 dark:text-indigo-400 dark:border-indigo-500/20',
-      'bg-purple-50 text-purple-600 border-purple-200 dark:bg-purple-500/10 dark:text-purple-400 dark:border-purple-500/20',
-      'bg-amber-50 text-amber-600 border-amber-200 dark:bg-amber-500/10 dark:text-amber-400 dark:border-amber-500/20',
-      'bg-pink-50 text-pink-600 border-pink-200 dark:bg-pink-500/10 dark:text-pink-400 dark:border-pink-500/20',
-      'bg-cyan-50 text-cyan-600 border-cyan-200 dark:bg-cyan-500/10 dark:text-cyan-400 dark:border-cyan-500/20',
-      'bg-rose-50 text-rose-600 border-rose-200 dark:bg-rose-500/10 dark:text-rose-400 dark:border-rose-500/20',
+      { bg: 'rgba(59, 130, 246, 0.12)', text: 'rgb(29, 78, 216)', border: 'rgba(59, 130, 246, 0.3)' }, // blue
+      { bg: 'rgba(16, 185, 129, 0.12)', text: 'rgb(4, 120, 87)', border: 'rgba(16, 185, 129, 0.3)' }, // emerald
+      { bg: 'rgba(99, 102, 241, 0.12)', text: 'rgb(67, 56, 202)', border: 'rgba(99, 102, 241, 0.3)' }, // indigo
+      { bg: 'rgba(139, 92, 246, 0.12)', text: 'rgb(109, 40, 217)', border: 'rgba(139, 92, 246, 0.3)' }, // purple
+      { bg: 'rgba(245, 158, 11, 0.12)', text: 'rgb(180, 83, 9)', border: 'rgba(245, 158, 11, 0.3)' }, // amber
+      { bg: 'rgba(236, 72, 153, 0.12)', text: 'rgb(190, 24, 74)', border: 'rgba(236, 72, 153, 0.3)' }, // pink
+      { bg: 'rgba(6, 182, 212, 0.12)', text: 'rgb(9, 133, 161)', border: 'rgba(6, 182, 212, 0.3)' }, // cyan
+      { bg: 'rgba(244, 63, 94, 0.12)', text: 'rgb(190, 18, 60)', border: 'rgba(244, 63, 94, 0.3)' } // rose
     ];
     let hash = 0;
     const name = profiles.find((p) => p.id === uid)?.full_name || uid || 'Unknown';
@@ -309,9 +309,17 @@ export const LeadsView: React.FC<LeadsViewProps> = ({ onNavigate }) => {
                     {new Date(l.created_at).toLocaleDateString()}
                   </td>
                   <td className="px-4 py-3 text-muted-foreground">
-                    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold border ${getUserColorClass(l.created_by)}`}>
-                      {getProfileName(l.created_by)}
-                    </span>
+                    {(() => {
+                      const colorStyle = getUserColorStyle(l.created_by);
+                      return (
+                        <span 
+                          style={{ backgroundColor: colorStyle.bg, color: colorStyle.text, borderColor: colorStyle.border }} 
+                          className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold border"
+                        >
+                          {getProfileName(l.created_by)}
+                        </span>
+                      );
+                    })()}
                   </td>
                 {currentUser?.role === 'head' && (
                   <td className="px-4 py-3 text-muted-foreground">
@@ -607,9 +615,17 @@ export const LeadsView: React.FC<LeadsViewProps> = ({ onNavigate }) => {
                             </p>
                             <p className="text-[9px] text-muted-foreground/80 flex items-center gap-1 mt-0.5">
                               <span>By:</span>
-                              <span className={`inline-flex items-center px-1.5 py-0.2 rounded text-[8px] font-semibold border ${getUserColorClass(l.created_by)}`}>
-                                {getProfileName(l.created_by)}
-                              </span>
+                              {(() => {
+                                const colorStyle = getUserColorStyle(l.created_by);
+                                return (
+                                  <span 
+                                    style={{ backgroundColor: colorStyle.bg, color: colorStyle.text, borderColor: colorStyle.border }} 
+                                    className="inline-flex items-center px-1.5 py-0.5 rounded text-[8px] font-semibold border"
+                                  >
+                                    {getProfileName(l.created_by)}
+                                  </span>
+                                );
+                              })()}
                             </p>
                           </div>
 
@@ -792,9 +808,17 @@ export const LeadsView: React.FC<LeadsViewProps> = ({ onNavigate }) => {
                         </div>
 
                         <div className="flex items-center justify-between border-t border-border/40 pt-3 mt-1 text-[9px]">
-                          <span className={`inline-flex items-center px-1.5 py-0.2 rounded text-[8px] font-semibold border ${getUserColorClass(l.created_by)}`}>
-                            By: {getProfileName(l.created_by)}
-                          </span>
+                          {(() => {
+                            const colorStyle = getUserColorStyle(l.created_by);
+                            return (
+                              <span 
+                                style={{ backgroundColor: colorStyle.bg, color: colorStyle.text, borderColor: colorStyle.border }} 
+                                className="inline-flex items-center px-1.5 py-0.5 rounded text-[8px] font-semibold border"
+                              >
+                                By: {getProfileName(l.created_by)}
+                              </span>
+                            );
+                          })()}
 
                           <div className="flex items-center gap-2">
                             <select

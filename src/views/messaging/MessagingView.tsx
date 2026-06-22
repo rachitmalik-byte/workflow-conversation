@@ -3,7 +3,8 @@ import { dbClient } from '../../services/dbClient';
 import { useAuth } from '../../context/AuthContext';
 import { supabase } from '../../services/supabase';
 import type { Message, Channel } from '../../types/database';
-import { Hash, Lock, Send, Search, Sparkles, Paperclip, Bold, Italic, Code, List, Loader2, Copy, Edit, Trash2, Filter, Check, CheckCheck, Archive, ArrowLeft } from 'lucide-react';
+import { Hash, Lock, Send, Search, Sparkles, Paperclip, Bold, Italic, Code, List, Loader2, Copy, Edit, Trash2, Filter, Check, CheckCheck, Archive, ArrowLeft, Smile } from 'lucide-react';
+import { MentionTextArea } from '../../components/ui/MentionInput';
 
 const getNameColor = (name: string) => {
   const colors = [
@@ -134,6 +135,7 @@ export const MessagingView: React.FC = () => {
   // Simulated features
   const [typingUsers, setTypingUsers] = useState<string[]>([]);
   const [isTyping, setIsTyping] = useState(false);
+  const [activeReactionPickerId, setActiveReactionPickerId] = useState<string | null>(null);
   const typingTimeoutRef = useRef<any>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -225,6 +227,15 @@ export const MessagingView: React.FC = () => {
       const msgs = await dbClient.getMessages(undefined, activeDMUserId);
       setMessages(msgs);
       dbClient.markMessagesAsRead(undefined, activeDMUserId).catch(console.error);
+    }
+  };
+
+  const handleToggleMessageReaction = async (messageId: string, emoji: string) => {
+    try {
+      await dbClient.toggleMessageReaction(messageId, emoji);
+      fetchChannelData();
+    } catch (e: any) {
+      console.error('Failed to toggle reaction', e);
     }
   };
 
@@ -343,13 +354,11 @@ export const MessagingView: React.FC = () => {
   };
 
   // typing status simulation
-  const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setMessageInput(e.target.value);
+  const handleMentionInputChange = (val: string) => {
+    setMessageInput(val);
     
-    // Simulate user typing indicators for colleagues
     if (!isTyping) {
       setIsTyping(true);
-      // In real supabase, we would broadcast typing state to presence channel
     }
 
     if (typingTimeoutRef.current) {
@@ -651,7 +660,7 @@ export const MessagingView: React.FC = () => {
     if (isDM) {
       const recipientId = msg.receiver_id;
       if (!recipientId) return 'sent';
-      const isRead = msg.message_read_receipts?.some((r) => String(r.user_id) === String(recipientId));
+      const isRead = msg.message_read_receipts?.some((r: any) => String(r.user_id) === String(recipientId));
       if (isRead) return 'read';
       const recipient = profiles.find((p) => p.id === recipientId);
       if (recipient?.presence === 'online') {
@@ -659,7 +668,7 @@ export const MessagingView: React.FC = () => {
       }
       return 'sent';
     } else {
-      const hasOtherRead = msg.message_read_receipts?.some((r) => String(r.user_id) !== String(msg.sender_id));
+      const hasOtherRead = msg.message_read_receipts?.some((r: any) => String(r.user_id) !== String(msg.sender_id));
       if (hasOtherRead) return 'read';
       return 'delivered';
     }
@@ -1180,6 +1189,32 @@ export const MessagingView: React.FC = () => {
                             >
                               <Copy className="h-3 w-3" />
                             </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setActiveReactionPickerId(activeReactionPickerId === msg.id ? null : msg.id);
+                              }}
+                              className="p-1 hover:bg-muted text-muted-foreground hover:text-foreground rounded transition-colors cursor-pointer relative"
+                              title="React to message"
+                            >
+                              <Smile className="h-3 w-3" />
+                            </button>
+                            {activeReactionPickerId === msg.id && (
+                              <div className="absolute z-35 bottom-full mb-1 flex items-center gap-1 bg-card border border-border px-2 py-1 rounded-full shadow-lg">
+                                {['👍', '✅', '👀', '🔥', '❓'].map((emoji) => (
+                                  <button
+                                    key={emoji}
+                                    onClick={() => {
+                                      handleToggleMessageReaction(msg.id, emoji);
+                                      setActiveReactionPickerId(null);
+                                    }}
+                                    className="hover:scale-125 transition-transform px-1 cursor-pointer text-xs"
+                                  >
+                                    {emoji}
+                                  </button>
+                                ))}
+                              </div>
+                            )}
                             {isOutgoing && (
                               <>
                                 <button
@@ -1249,6 +1284,29 @@ export const MessagingView: React.FC = () => {
                             </div>
                           </div>
 
+                          {/* Reactions badges */}
+                          {msg.reactions && msg.reactions.length > 0 && (
+                            <div className={`flex flex-wrap gap-1 mt-1 ${isOutgoing ? 'justify-end' : 'justify-start'}`}>
+                              {msg.reactions.map((r: any) => {
+                                const hasReacted = r.user_ids.includes(currentUser?.id || '');
+                                return (
+                                  <button
+                                    key={r.emoji}
+                                    onClick={() => handleToggleMessageReaction(msg.id, r.emoji)}
+                                    className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-bold border transition-colors cursor-pointer ${
+                                      hasReacted
+                                        ? 'bg-primary/10 border-primary/30 text-primary hover:bg-primary/15'
+                                        : 'bg-muted/40 border-border/60 text-muted-foreground hover:bg-muted/60 hover:text-foreground'
+                                    }`}
+                                  >
+                                    <span>{r.emoji}</span>
+                                    <span>{r.user_ids.length}</span>
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          )}
+
                           {editingMessageId === msg.id ? (
                             <div className="space-y-1.5 mt-1.5 w-64 max-w-full">
                               <input
@@ -1314,10 +1372,10 @@ export const MessagingView: React.FC = () => {
         {/* Message Editor Input Area */}
         <div className="p-3 bg-card border-t border-border">
           <form onSubmit={handleSendMessage} className="border border-border rounded-lg bg-background p-1 flex flex-col focus-within:border-primary">
-            <textarea
+            <MentionTextArea
               ref={textareaRef}
               value={messageInput}
-              onChange={handleInputChange}
+              onChangeValue={handleMentionInputChange}
               onPaste={handlePaste}
               onKeyDown={handleKeyDown}
               placeholder={activeChannelId ? `Message #${headerDetails.title} (Enter to send)...` : `Message ${headerDetails.title} (Enter to send)...`}

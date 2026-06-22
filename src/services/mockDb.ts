@@ -718,6 +718,19 @@ class MemoryDB {
       this.leads[lIdx].updated_at = new Date().toISOString();
     }
 
+    // Scan for mentions and send notifications
+    this.profiles.forEach((p) => {
+      if (p.id !== userId && p.status === 'active' && content.includes(`@${p.full_name}`)) {
+        this.createNotification(
+          p.id,
+          'mention_alert',
+          'Mentioned in Lead Update',
+          `${this.profiles.find((u) => u.id === userId)?.full_name || 'A teammate'} mentioned you in a lead update.`,
+          `/leads/${leadId}`
+        );
+      }
+    });
+
     this.notify('lead_updates', 'insert', newUpdate);
     return newUpdate;
   }
@@ -785,7 +798,7 @@ class MemoryDB {
     const task = this.tasks[idx];
 
     // Access check
-    if (role !== 'head' && task.creator_id !== userId && task.assignee_id !== userId) {
+    if (role !== 'head' && task.creator_id !== userId && task.assignee_id !== userId && !task.assignee_ids?.includes(userId)) {
       throw new Error('Access Denied');
     }
 
@@ -804,6 +817,51 @@ class MemoryDB {
         `${this.profiles.find(p => p.id === userId)?.full_name} marked task "${task.title}" as ${taskData.status}.`,
         '/tasks'
       );
+    }
+
+    // Auto-create next occurrence on completion
+    if (taskData.status === 'done' && task.status !== 'done' && updatedTask.recurrence_type && updatedTask.recurrence_type !== 'none') {
+      let nextDeadline: Date | undefined = undefined;
+      if (updatedTask.deadline) {
+        const dl = new Date(updatedTask.deadline);
+        const interval = updatedTask.recurrence_interval || 1;
+        if (updatedTask.recurrence_type === 'daily') {
+          dl.setDate(dl.getDate() + interval);
+        } else if (updatedTask.recurrence_type === 'weekly') {
+          dl.setDate(dl.getDate() + 7 * interval);
+        } else if (updatedTask.recurrence_type === 'monthly') {
+          dl.setMonth(dl.getMonth() + interval);
+        }
+        nextDeadline = dl;
+      }
+
+      const shouldRecreate = !updatedTask.recurrence_end_date || 
+        !nextDeadline || 
+        nextDeadline.getTime() <= new Date(updatedTask.recurrence_end_date).getTime();
+
+      if (shouldRecreate) {
+        const nextTask: Task = {
+          id: `task-${Math.random().toString(36).substr(2, 9)}`,
+          title: updatedTask.title,
+          description: updatedTask.description,
+          assignee_id: updatedTask.assignee_id,
+          assignee_ids: updatedTask.assignee_ids,
+          creator_id: updatedTask.creator_id,
+          priority: updatedTask.priority,
+          deadline: nextDeadline ? nextDeadline.toISOString() : undefined,
+          reminder_offsets: updatedTask.reminder_offsets,
+          status: 'todo',
+          type: updatedTask.type,
+          attachments: updatedTask.attachments,
+          recurrence_type: updatedTask.recurrence_type,
+          recurrence_interval: updatedTask.recurrence_interval,
+          recurrence_end_date: updatedTask.recurrence_end_date,
+          parent_task_id: updatedTask.parent_task_id || updatedTask.id,
+          created_at: new Date().toISOString()
+        };
+        this.tasks.unshift(nextTask);
+        this.notify('tasks', 'insert', nextTask);
+      }
     }
 
     this.notify('tasks', 'update', updatedTask);
@@ -906,6 +964,16 @@ class MemoryDB {
       ...msg,
       message_read_receipts: this.readReceipts.filter(r => r.message_id === msg.id)
     }));
+  }
+
+  getAllMessages(userId: string): Message[] {
+    const userChanIds = this.channels
+      .filter((c) => !c.is_private || c.member_ids?.includes(userId))
+      .map((c) => c.id);
+    return this.messages.filter((m) => 
+      (m.channel_id && userChanIds.includes(m.channel_id)) ||
+      (!m.channel_id && (m.sender_id === userId || m.receiver_id === userId))
+    );
   }
 
   sendMessage(channelId?: string, receiverId?: string, content?: string, attachments?: { name: string; url: string }[], senderId?: string): Message {
@@ -1078,6 +1146,56 @@ class MemoryDB {
     if (idx === -1) throw new Error('Note not found');
     this.personalNotes.splice(idx, 1);
     this.notify('personal_notes', 'delete', { id });
+  }
+
+  toggleMessageReaction(messageId: string, emoji: string, userId: string): Message {
+    const idx = this.messages.findIndex(m => m.id === messageId);
+    if (idx === -1) throw new Error('Message not found');
+    const msg = this.messages[idx];
+    const reactions = msg.reactions ? [...msg.reactions] : [];
+    
+    const existing = reactions.find(r => r.emoji === emoji);
+    if (existing) {
+      if (existing.user_ids.includes(userId)) {
+        existing.user_ids = existing.user_ids.filter(id => id !== userId);
+      } else {
+        existing.user_ids.push(userId);
+      }
+    } else {
+      reactions.push({ emoji, user_ids: [userId] });
+    }
+    
+    const cleanedReactions = reactions.filter(r => r.user_ids.length > 0);
+    
+    const updatedMsg = { ...msg, reactions: cleanedReactions };
+    this.messages[idx] = updatedMsg;
+    this.notify('messages', 'update', updatedMsg);
+    return updatedMsg;
+  }
+
+  toggleLeadUpdateReaction(updateId: string, emoji: string, userId: string): LeadUpdate {
+    const idx = this.leadUpdates.findIndex(u => u.id === updateId);
+    if (idx === -1) throw new Error('Lead update not found');
+    const upd = this.leadUpdates[idx];
+    const reactions = upd.reactions ? [...upd.reactions] : [];
+    
+    const existing = reactions.find(r => r.emoji === emoji);
+    if (existing) {
+      if (existing.user_ids.includes(userId)) {
+        existing.user_ids = existing.user_ids.filter(id => id !== userId);
+      } else {
+        existing.user_ids.push(userId);
+      }
+    } else {
+      reactions.push({ emoji, user_ids: [userId] });
+    }
+    
+    const cleanedReactions = reactions.filter(r => r.user_ids.length > 0);
+    
+    const updatedUpd = { ...upd, reactions: cleanedReactions };
+    this.leadUpdates[idx] = updatedUpd;
+    this.notify('lead_updates', 'update', updatedUpd);
+    return updatedUpd;
   }
 
   markMessagesAsRead(channelId?: string, receiverId?: string, currentUserId?: string) {

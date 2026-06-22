@@ -187,6 +187,7 @@ CREATE TABLE public.lead_updates (
     lead_id UUID NOT NULL REFERENCES public.leads(id) ON DELETE CASCADE,
     user_id UUID NOT NULL REFERENCES public.profiles(id),
     content TEXT NOT NULL,
+    reactions JSONB DEFAULT '[]',
     created_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now())
 );
 
@@ -223,6 +224,10 @@ CREATE TABLE public.tasks (
     status task_status NOT NULL DEFAULT 'todo',
     type task_type NOT NULL DEFAULT 'personal',
     attachments JSONB DEFAULT '[]',
+    recurrence_type TEXT DEFAULT 'none',
+    recurrence_interval INTEGER,
+    recurrence_end_date TIMESTAMPTZ,
+    parent_task_id UUID REFERENCES public.tasks(id) ON DELETE SET NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now())
 );
 
@@ -270,6 +275,7 @@ CREATE TABLE public.reminders (
     creator_id UUID NOT NULL REFERENCES public.profiles(id),
     status TEXT NOT NULL DEFAULT 'active',
     notification_type TEXT NOT NULL DEFAULT 'notification',
+    is_company_event BOOLEAN DEFAULT false,
     created_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now())
 );
 
@@ -326,6 +332,7 @@ CREATE TABLE public.messages (
     receiver_id UUID REFERENCES public.profiles(id),
     content TEXT NOT NULL,
     attachments JSONB DEFAULT '[]',
+    reactions JSONB DEFAULT '[]',
     created_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now())
 );
 
