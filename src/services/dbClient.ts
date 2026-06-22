@@ -42,9 +42,9 @@ class DBClient {
 
   async getProfiles(): Promise<Profile[]> {
     const client = this.getClient();
-    if (!client) return [...mockDb.profiles];
+    if (!client) return mockDb.profiles.filter(p => p.status === 'active');
 
-    const { data, error } = await client.from('profiles').select('*');
+    const { data, error } = await client.from('profiles').select('*').eq('status', 'active');
     if (error) throw error;
     return data || [];
   }
@@ -603,6 +603,21 @@ class DBClient {
 
     const { error } = await client.from('profiles').update({ status: 'inactive' }).eq('id', id);
     if (error) throw error;
+  }
+
+  async hardDeleteProfile(id: string): Promise<void> {
+    const client = this.getClient();
+    if (!client) {
+      mockDb.hardDeleteProfile(id);
+      return;
+    }
+
+    // Supabase hard deletion. Clean up child dependencies to avoid constraint violations.
+    await client.from('lead_assigned_users').delete().eq('user_id', id);
+    await client.from('tasks').delete().or(`assignee_id.eq.${id},creator_id.eq.${id}`);
+    await client.from('reminders').delete().eq('creator_id', id);
+    await client.from('messages').delete().or(`sender_id.eq.${id},receiver_id.eq.${id}`);
+    await client.from('profiles').delete().eq('id', id);
   }
 
   // Personal Notes CRUD

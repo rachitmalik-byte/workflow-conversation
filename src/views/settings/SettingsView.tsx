@@ -335,10 +335,14 @@ export const SettingsView: React.FC = () => {
   };
 
   const handleDeleteMember = async (id: string, name: string) => {
-    if (!window.confirm(`Are you sure you want to remove teammate: ${name}? This cannot be undone.`)) return;
+    if (!window.confirm(`Are you sure you want to completely delete teammate: ${name}? This will permanently remove their profile and all associated tasks, reminders, and DMs. This cannot be undone.`)) return;
     try {
-      await dbClient.deleteProfile(id);
-      alert(`Teammate ${name} has been removed successfully.`);
+      if (typeof (dbClient as any).hardDeleteProfile === 'function') {
+        await (dbClient as any).hardDeleteProfile(id);
+      } else {
+        await dbClient.deleteProfile(id);
+      }
+      alert(`Teammate ${name} has been permanently deleted.`);
       if (currentUser) {
         await switchUser(currentUser.id);
       }

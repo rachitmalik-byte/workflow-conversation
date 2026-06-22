@@ -493,7 +493,15 @@ const MOCK_NOTIFICATIONS: Notification[] = [
 
 // Memory Database Store
 class MemoryDB {
-  profiles = [...MOCK_PROFILES];
+  profiles = (() => {
+    try {
+      const deletedRaw = localStorage.getItem('relayhq_deleted_profiles');
+      const deletedIds = deletedRaw ? JSON.parse(deletedRaw) : [];
+      return MOCK_PROFILES.filter(p => !deletedIds.includes(p.id) && p.email?.toLowerCase() !== 'arjab.jain@englivo.com');
+    } catch {
+      return MOCK_PROFILES.filter(p => p.email?.toLowerCase() !== 'arjab.jain@englivo.com');
+    }
+  })();
   leads = [...MOCK_LEADS];
   leadUpdates = [...MOCK_LEAD_UPDATES];
   leadAttachments = [...MOCK_LEAD_ATTACHMENTS];
@@ -1002,6 +1010,36 @@ class MemoryDB {
     this.notify('profiles', 'update', updated);
     this.notify('auth', 'update', updated);
     return updated;
+  }
+
+  hardDeleteProfile(id: string) {
+    this.profiles = this.profiles.filter((p) => p.id !== id);
+    try {
+      const deletedRaw = localStorage.getItem('relayhq_deleted_profiles');
+      const deletedIds = deletedRaw ? JSON.parse(deletedRaw) : [];
+      if (!deletedIds.includes(id)) {
+        deletedIds.push(id);
+        localStorage.setItem('relayhq_deleted_profiles', JSON.stringify(deletedIds));
+      }
+    } catch (e) {
+      console.error(e);
+    }
+    
+    // Clean up references
+    this.leads = this.leads.map((l) => ({
+      ...l,
+      assigned_users: l.assigned_users?.filter((uid) => uid !== id) || []
+    }));
+    this.tasks = this.tasks.filter((t) => t.assignee_id !== id && t.creator_id !== id);
+    this.reminders = this.reminders.filter((r) => r.creator_id !== id);
+    this.messages = this.messages.filter((m) => m.sender_id !== id && m.receiver_id !== id);
+    this.channels = this.channels.map((c) => ({
+      ...c,
+      member_ids: c.member_ids?.filter((uid) => uid !== id) || []
+    }));
+    
+    this.notify('profiles', 'delete', { id });
+    this.notify('auth', 'delete', { id });
   }
 
   // Personal Notes CRUD

@@ -4,7 +4,7 @@ import { dbClient } from '../../services/dbClient';
 import {
   LayoutDashboard, Briefcase, CheckSquare, Calendar,
   MessageSquare, ArrowLeftRight, FileText,
-  ChevronLeft, ChevronRight, Settings, LogOut
+  ChevronLeft, ChevronRight, Settings, LogOut, Mail, ExternalLink
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -269,6 +269,26 @@ export const Sidebar: React.FC<SidebarProps> = ({
             </div>
           )}
         </nav>
+
+        {/* Bulk Mail Chip */}
+        <div className="px-3 py-2 flex-shrink-0">
+          <a
+            href="https://mainsitesend.vercel.app/followups"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-2 text-primary bg-primary/10 border border-primary/20 rounded-lg hover:bg-primary/15 transition-all duration-200"
+            style={{ justifyContent: isExpanded ? 'flex-start' : 'center', padding: isExpanded ? '8px 12px' : '8px' }}
+            title="Bulk Email & Follow-ups"
+          >
+            <Mail className="h-3.5 w-3.5 flex-shrink-0" />
+            {isExpanded && (
+              <span className="truncate flex items-center gap-1 text-[11px] font-semibold">
+                <span>Bulk Email Tool</span>
+                <ExternalLink className="h-3 w-3 opacity-60" />
+              </span>
+            )}
+          </a>
+        </div>
 
         {/* ── Profile Footer ── */}
         <div

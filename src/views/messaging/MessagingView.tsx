@@ -3,7 +3,7 @@ import { dbClient } from '../../services/dbClient';
 import { useAuth } from '../../context/AuthContext';
 import { supabase } from '../../services/supabase';
 import type { Message, Channel } from '../../types/database';
-import { Hash, Lock, Send, Search, Sparkles, Paperclip, Bold, Italic, Code, List, Loader2, Copy, Edit, Trash2, Filter, Check, CheckCheck } from 'lucide-react';
+import { Hash, Lock, Send, Search, Sparkles, Paperclip, Bold, Italic, Code, List, Loader2, Copy, Edit, Trash2, Filter, Check, CheckCheck, Archive, ArrowLeft } from 'lucide-react';
 
 const getNameColor = (name: string) => {
   const colors = [
@@ -37,10 +37,36 @@ export const MessagingView: React.FC = () => {
     setIsTokenExpired,
     refreshGoogleChat,
     sendGoogleMessage,
+    googleConnectionStatus,
     isSimulator
   } = useAuth();
   
   const [channels, setChannels] = useState<Channel[]>([]);
+  const [activeMobilePane, setActiveMobilePane] = useState<'list' | 'chat'>('list');
+  const [archivedDMs, setArchivedDMs] = useState<string[]>(() => {
+    try {
+      const saved = localStorage.getItem('relayhq_archived_dms');
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  const archiveDM = (userId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const updated = [...archivedDMs, userId];
+    setArchivedDMs(updated);
+    localStorage.setItem('relayhq_archived_dms', JSON.stringify(updated));
+    if (activeDMUserId === userId) {
+      setActiveDMUserId(null);
+    }
+  };
+
+  const unarchiveDM = (userId: string) => {
+    const updated = archivedDMs.filter((id) => id !== userId);
+    setArchivedDMs(updated);
+    localStorage.setItem('relayhq_archived_dms', JSON.stringify(updated));
+  };
   const [activeChannelId, setActiveChannelId] = useState<string | null>(() => {
     if (localStorage.getItem('relayhq_active_dm_user_id') || localStorage.getItem('relayhq_active_google_space_id')) {
       return null;
@@ -138,6 +164,18 @@ export const MessagingView: React.FC = () => {
   const [newChanPrivate, setNewChanPrivate] = useState(false);
 
   const reconnectGoogle = async () => {
+    // Attempt silent recovery first if possible
+    if (googleAccessToken) {
+      try {
+        await refreshGoogleChat();
+        if (!isTokenExpired) {
+          return; // silent recovery worked!
+        }
+      } catch (err) {
+        console.warn('Silent refresh attempt failed:', err);
+      }
+    }
+
     if (!supabase) {
       alert('Production database is not connected. Configure database in Settings or Login screen first!');
       return;
@@ -479,9 +517,11 @@ export const MessagingView: React.FC = () => {
       window.dispatchEvent(new Event('unread-counts-updated'));
       return next;
     });
+    setActiveMobilePane('chat');
   };
 
   const selectDMUser = (userId: string) => {
+    unarchiveDM(userId);
     setActiveDMUserId(userId);
     setActiveChannelId(null);
     setActiveGoogleSpaceId(null);
@@ -495,6 +535,7 @@ export const MessagingView: React.FC = () => {
       window.dispatchEvent(new Event('unread-counts-updated'));
       return next;
     });
+    setActiveMobilePane('chat');
   };
 
   const selectGoogleSpace = (spaceId: string) => {
@@ -514,6 +555,7 @@ export const MessagingView: React.FC = () => {
     if (googleAccessToken) {
       refreshGoogleChat();
     }
+    setActiveMobilePane('chat');
   };
 
 
@@ -626,9 +668,11 @@ export const MessagingView: React.FC = () => {
   const headerDetails = getActiveHeaderDetails();
 
   return (
-    <div className="flex h-[calc(100vh-3.5rem)] overflow-hidden bg-background">
+    <div className="flex h-[calc(100vh-3.5rem)] overflow-hidden bg-background w-full">
       {/* Messages Left Sidebar Directory */}
-      <div className="w-56 sm:w-64 border-r border-border bg-card flex flex-col flex-shrink-0">
+      <div className={`w-full md:w-64 border-r border-border bg-card flex flex-col flex-shrink-0 ${
+        activeMobilePane === 'list' ? 'flex' : 'hidden md:flex'
+      }`}>
         {/* Navigation list */}
         <div className="flex-1 overflow-y-auto p-3 space-y-4">
           {/* Unread Filters Toggle bar */}
@@ -737,6 +781,7 @@ export const MessagingView: React.FC = () => {
               .filter((p) => p.id !== currentUser?.id && p.status === 'active' && p.full_name.toLowerCase().includes(dmSearchText.toLowerCase()))
               .filter((p) => {
                 if (showUnreadOnly && !(unreadCounts[p.id] > 0)) return false;
+                if (dmSearchText === '' && archivedDMs.includes(p.id)) return false;
                 return true;
               })
               .map((p) => {
@@ -748,7 +793,7 @@ export const MessagingView: React.FC = () => {
                   <button
                     key={p.id}
                     onClick={() => selectDMUser(p.id)}
-                    className={`flex flex-col w-full text-left gap-1 px-2.5 py-1.5 rounded transition-colors ${
+                    className={`flex flex-col w-full text-left gap-1 px-2.5 py-1.5 rounded transition-colors group relative ${
                       activeDMUserId === p.id
                         ? 'bg-primary/10 border border-primary/20'
                         : hasUnread 
@@ -780,14 +825,21 @@ export const MessagingView: React.FC = () => {
                         </div>
                         <span className="truncate text-xs">{p.full_name}</span>
                       </div>
-                      {hasUnread && (
-                        <div className="flex items-center gap-1">
-                          <span className="h-2 w-2 rounded-full bg-danger animate-pulse flex-shrink-0" />
+                      <div className="flex items-center gap-1.5 flex-shrink-0">
+                        {hasUnread && (
                           <span className="px-1.5 py-[1px] text-[9px] font-bold bg-danger text-white rounded flex-shrink-0">
                             {unreadCount}
                           </span>
-                        </div>
-                      )}
+                        )}
+                        <button
+                          type="button"
+                          onClick={(e) => archiveDM(p.id, e)}
+                          className="opacity-0 group-hover:opacity-100 p-0.5 hover:bg-muted rounded text-muted-foreground hover:text-foreground transition-all cursor-pointer"
+                          title="Archive Chat"
+                        >
+                          <Archive className="h-3 w-3" />
+                        </button>
+                      </div>
                     </div>
                     {preview && (
                       <div className={`text-[9.5px] truncate w-full pr-2 ${hasUnread ? 'text-foreground font-semibold' : 'text-muted-foreground'}`}>
@@ -803,7 +855,14 @@ export const MessagingView: React.FC = () => {
           <div className="space-y-1 pt-2 border-t border-border/40">
             <div className="px-2 py-1 text-[10px] font-bold text-muted-foreground uppercase tracking-wider flex items-center justify-between">
               <span>Google Chat Spaces</span>
-              <span className="h-1.5 w-1.5 rounded-full bg-success" title="Live integration" />
+              <span 
+                className={`h-1.5 w-1.5 rounded-full ${
+                  googleConnectionStatus === 'connected' ? 'bg-success' :
+                  googleConnectionStatus === 'reconnecting' ? 'bg-warning animate-pulse' :
+                  'bg-muted-foreground/40'
+                }`} 
+                title={`Google Chat Status: ${googleConnectionStatus}`} 
+              />
             </div>
 
             {isTokenExpired && (
@@ -919,26 +978,39 @@ export const MessagingView: React.FC = () => {
       </div>
 
       {/* Main Messaging Chat Area */}
-      <div className="flex-1 flex flex-col h-full overflow-hidden bg-background">
+      <div className={`flex-1 flex flex-col h-full overflow-hidden bg-background ${
+        activeMobilePane === 'chat' ? 'flex' : 'hidden md:flex'
+      }`}>
         {/* Chat Toolbar Header */}
         <div className="border-b border-border bg-card px-4 py-2.5 flex items-center justify-between gap-4">
-          <div className="min-w-0">
-            <div className="flex items-center gap-1.5">
-              {headerDetails.isPrivate ? (
-                <Lock className="h-4 w-4 text-muted-foreground" />
-              ) : (
-                <Hash className="h-4 w-4 text-muted-foreground" />
-              )}
-              <h3 className="text-sm font-bold text-foreground truncate">{headerDetails.title}</h3>
-              {activeGoogleSpaceId && isTokenExpired && (
-                <span className="text-[9px] bg-warning/15 text-warning px-1.5 py-0.5 rounded-full font-bold animate-pulse border border-warning/20">
-                  Simulator Offline
-                </span>
-              )}
+          <div className="min-w-0 flex items-center gap-1.5">
+            {/* Back button on mobile */}
+            <button
+              type="button"
+              onClick={() => setActiveMobilePane('list')}
+              className="md:hidden p-1.5 hover:bg-muted text-muted-foreground hover:text-foreground rounded transition-colors mr-1 flex-shrink-0"
+              title="Back to list"
+            >
+              <ArrowLeft className="h-4 w-4" />
+            </button>
+            <div className="min-w-0">
+              <div className="flex items-center gap-1.5">
+                {headerDetails.isPrivate ? (
+                  <Lock className="h-3.5 w-3.5 text-muted-foreground" />
+                ) : (
+                  <Hash className="h-3.5 w-3.5 text-muted-foreground" />
+                )}
+                <h3 className="text-sm font-bold text-foreground truncate">{headerDetails.title}</h3>
+                {activeGoogleSpaceId && isTokenExpired && (
+                  <span className="text-[9px] bg-warning/15 text-warning px-1.5 py-0.5 rounded-full font-bold animate-pulse border border-warning/20">
+                    Simulator Offline
+                  </span>
+                )}
+              </div>
+              <p className="text-[10px] text-muted-foreground truncate max-w-[300px] mt-0.5">
+                {headerDetails.desc}
+              </p>
             </div>
-            <p className="text-[10px] text-muted-foreground truncate max-w-[300px] mt-0.5">
-              {headerDetails.desc}
-            </p>
           </div>
 
           {/* Chat Search Box */}

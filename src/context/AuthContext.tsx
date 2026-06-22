@@ -52,6 +52,7 @@ interface AuthContextType {
   setIsTokenExpired: (expired: boolean) => void;
   refreshGoogleChat: () => Promise<void>;
   sendGoogleMessage: (spaceName: string, content: string) => Promise<void>;
+  googleConnectionStatus: 'connected' | 'reconnecting' | 'disconnected';
 }
 
 
@@ -93,6 +94,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   });
   const [isTokenExpired, setIsTokenExpired] = useState(false);
+  const [googleConnectionStatus, setGoogleConnectionStatus] = useState<'connected' | 'reconnecting' | 'disconnected'>('disconnected');
   const [lastMessageIds, setLastMessageIds] = useState<Record<string, string>>({});
   // Consecutive auth failure counter — only show expired banner after 3+ failures
   const authFailCountRef = useRef(0);
@@ -127,16 +129,37 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const refreshGoogleChat = async () => {
     const token = googleAccessToken;
     if (!token) return;
+    setGoogleConnectionStatus('reconnecting');
+
+    // Attempt silent session refresh first
+    if (supabase) {
+      try {
+        console.log('Refreshing Supabase session...');
+        const { data: { session }, error } = await supabase.auth.refreshSession();
+        if (!error && session && session.provider_token) {
+          setGoogleAccessToken(session.provider_token);
+          setIsTokenExpired(false);
+          setGoogleConnectionStatus('connected');
+          authFailCountRef.current = 0;
+        }
+      } catch (err) {
+        console.warn('Manual silent refresh failed:', err);
+      }
+    }
+
     try {
-      const spaces = await dbClient.getGoogleChatSpaces(token);
+      const activeToken = localStorage.getItem('relayhq_google_provider_token') || token;
+      const spaces = await dbClient.getGoogleChatSpaces(activeToken);
       setGoogleSpaces(spaces);
       setIsTokenExpired(false);
+      setGoogleConnectionStatus('connected');
+      authFailCountRef.current = 0;
 
       const initialLastIds: Record<string, string> = {};
       const initialMessages: Record<string, any[]> = {};
       for (const space of spaces) {
         try {
-          const msgs = await dbClient.getGoogleChatMessages(space.name, token);
+          const msgs = await dbClient.getGoogleChatMessages(space.name, activeToken);
           initialMessages[space.name] = msgs;
           if (msgs.length > 0) {
             initialLastIds[space.name] = msgs[msgs.length - 1].name;
@@ -152,7 +175,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const isAuthError = err.message?.includes('expired') || err.message?.includes('401') || err.message?.includes('UNAUTHENTICATED');
       if (isAuthError) {
         authFailCountRef.current += 1;
-        if (authFailCountRef.current >= 2) setIsTokenExpired(true);
+        if (authFailCountRef.current >= 2) {
+          setIsTokenExpired(true);
+          setGoogleConnectionStatus('disconnected');
+        }
       }
     }
   };
@@ -251,6 +277,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     
     // In simulation mode (no token or expired token), populate mock spaces so the UI remains interactive
     if (!token || isTokenExpired) {
+      setGoogleConnectionStatus('disconnected');
       if (googleSpaces.length === 0) {
         setGoogleSpaces(MOCK_GOOGLE_SPACES);
         setGoogleMessages(getMockGoogleMessages());
@@ -259,11 +286,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
 
     let isSubscribed = true;
-    let pollInterval: any;
+    let pollTimeout: any;
+    let currentPollInterval = 30000; // start with 30s
+    let consecutiveFailures = 0;
 
     const loadInitialData = async () => {
+      setGoogleConnectionStatus('reconnecting');
       try {
-        // Fetch user info first if not loaded
         if (!googleUserInfo) {
           await fetchGoogleUserInfo(token);
         }
@@ -272,6 +301,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (!isSubscribed) return;
         setGoogleSpaces(spaces);
         setIsTokenExpired(false);
+        setGoogleConnectionStatus('connected');
 
         const initialLastIds: Record<string, string> = {};
         const initialMessages: Record<string, any[]> = {};
@@ -296,6 +326,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           authFailCountRef.current += 1;
           if (authFailCountRef.current >= 3) {
             setIsTokenExpired(true);
+            setGoogleConnectionStatus('disconnected');
             setGoogleSpaces(MOCK_GOOGLE_SPACES);
             setGoogleMessages(getMockGoogleMessages());
           }
@@ -303,12 +334,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     };
 
-    loadInitialData();
+    const poll = async () => {
+      if (!isSubscribed) return;
+      
+      // Reduce polling aggressiveness when tab is hidden (poll every 120s)
+      if (document.hidden) {
+        pollTimeout = setTimeout(poll, 120000);
+        return;
+      }
 
-    // Poll every 30 seconds for new messages in all spaces
-    pollInterval = setInterval(async () => {
-      if (document.hidden) return; // Pause polling when tab is hidden
-      if (isTokenExpired || !isSubscribed) return;
+      if (isTokenExpired) {
+        setGoogleConnectionStatus('disconnected');
+        return;
+      }
+
       try {
         const updatedMessages = { ...googleMessages };
 
@@ -369,24 +408,58 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (isSubscribed) {
           setGoogleMessages(updatedMessages);
           setLastMessageIds({ ...lastMessageIds });
-          authFailCountRef.current = 0; // reset on success
+          setGoogleConnectionStatus('connected');
+          consecutiveFailures = 0; // reset failures on success
+          currentPollInterval = 30000; // reset to 30s
         }
       } catch (err: any) {
+        console.error('Polling cycle failed:', err);
         const isAuthError = err.message?.includes('expired') || err.message?.includes('401') || err.message?.includes('UNAUTHENTICATED');
         if (isAuthError) {
-          authFailCountRef.current += 1;
-          if (authFailCountRef.current >= 3) {
+          consecutiveFailures += 1;
+          setGoogleConnectionStatus('reconnecting');
+
+          // Attempt automatic silent refresh using supabase.auth.refreshSession()
+          if (supabase && consecutiveFailures === 1) {
+            try {
+              console.log('Google Chat auth failed. Attempting silent session refresh...');
+              const { data: { session }, error } = await supabase.auth.refreshSession();
+              if (!error && session && session.provider_token) {
+                setGoogleAccessToken(session.provider_token);
+                consecutiveFailures = 0;
+                currentPollInterval = 30000;
+                console.log('Google Chat session refreshed successfully!');
+                pollTimeout = setTimeout(poll, currentPollInterval);
+                return;
+              }
+            } catch (refreshErr) {
+              console.warn('Silent session refresh failed:', refreshErr);
+            }
+          }
+
+          if (consecutiveFailures >= 3) {
             setIsTokenExpired(true);
+            setGoogleConnectionStatus('disconnected');
             setGoogleSpaces(MOCK_GOOGLE_SPACES);
             setGoogleMessages(getMockGoogleMessages());
+            return; // stop polling
           }
+
+          // Exponential backoff
+          currentPollInterval = Math.min(120000, currentPollInterval * 2);
         }
       }
-    }, 30000); // 30s polling
+
+      pollTimeout = setTimeout(poll, currentPollInterval);
+    };
+
+    loadInitialData().then(() => {
+      pollTimeout = setTimeout(poll, currentPollInterval);
+    });
 
     return () => {
       isSubscribed = false;
-      clearInterval(pollInterval);
+      clearTimeout(pollTimeout);
     };
   }, [googleAccessToken, isTokenExpired, googleSpaces.length, currentUser, googleUserInfo]);
 
@@ -528,6 +601,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setIsTokenExpired,
         refreshGoogleChat,
         sendGoogleMessage,
+        googleConnectionStatus,
       }}
     >
       {children}

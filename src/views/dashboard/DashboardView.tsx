@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { dbClient } from '../../services/dbClient';
 import { useAuth } from '../../context/AuthContext';
 import type { Lead, Task, Reminder } from '../../types/database';
-import { Briefcase, CheckSquare, Calendar, Activity, ChevronRight } from 'lucide-react';
+import { Briefcase, CheckSquare, Calendar, Activity, ChevronRight, Mail, ExternalLink } from 'lucide-react';
 
 interface DashboardViewProps {
   onNavigate: (view: string) => void;
@@ -406,6 +406,30 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
         <p className="text-xs text-muted-foreground mt-0.5">
           Workspace role: {currentUser?.role === 'head' ? 'Workspace Head / Operations Director' : 'Growth & Outbound Campaign Specialist'}
         </p>
+      </div>
+
+      {/* Bulk Mail Campaign CTA */}
+      <div className="border border-border rounded-xl bg-gradient-to-r from-primary/10 to-accent/10 p-4 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <div className="h-9 w-9 bg-primary/20 text-primary rounded-full flex items-center justify-center flex-shrink-0">
+            <Mail className="h-4 w-4" />
+          </div>
+          <div>
+            <h4 className="text-xs font-extrabold text-foreground">Need to send bulk mails & follow-ups?</h4>
+            <p className="text-[10px] text-muted-foreground mt-0.5 leading-normal max-w-2xl">
+              Use our companion Bulk Mailing platform to launch cold campaigns, schedule automatic replies, and track open analytics.
+            </p>
+          </div>
+        </div>
+        <a
+          href="https://mainsitesend.vercel.app/followups"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center gap-1.5 px-3 py-1.5 bg-primary hover:bg-primary/95 text-white rounded text-xs font-semibold shadow-sm transition-all duration-200 cursor-pointer flex-shrink-0"
+        >
+          <span>Launch Mailer</span>
+          <ExternalLink className="h-3.5 w-3.5" />
+        </a>
       </div>
 
       {currentUser?.role === 'head' ? renderHeadDashboard() : renderSpecialistDashboard()}
