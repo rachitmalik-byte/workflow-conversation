@@ -215,6 +215,7 @@ CREATE TABLE public.tasks (
     title TEXT NOT NULL,
     description TEXT,
     assignee_id UUID REFERENCES public.profiles(id) ON DELETE SET NULL,
+    assignee_ids UUID[] DEFAULT '{}',
     creator_id UUID NOT NULL REFERENCES public.profiles(id),
     priority task_priority NOT NULL DEFAULT 'medium',
     deadline TIMESTAMPTZ,

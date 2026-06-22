@@ -68,6 +68,7 @@ export interface Task {
   title: string;
   description?: string;
   assignee_id?: string;
+  assignee_ids?: string[];
   creator_id: string;
   priority: TaskPriority;
   deadline?: string;

@@ -1,15 +1,163 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
+import { useTheme } from '../../context/ThemeContext';
 import { dbClient } from '../../services/dbClient';
 import { supabase } from '../../services/supabase';
 import type { Profile, UserRole } from '../../types/database';
-import { AlertCircle, Users, Shield, Circle, User, Wifi, Bell, Key, Lock, Trash2 } from 'lucide-react';
+import { AlertCircle, Users, Shield, Circle, User, Wifi, Bell, Key, Lock, Trash2, Palette } from 'lucide-react';
 import { mockDb } from '../../services/mockDb';
 
 type TabType = 'profile' | 'connection' | 'teammates' | 'notifications' | 'security';
 
+// Web Audio sound previews
+const playSynthChime = (sound: string) => {
+  try {
+    const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+    const ctx = new AudioCtx();
+    const now = ctx.currentTime;
+    
+    if (sound === 'classic') {
+      const playTone = (time: number, freq: number, duration: number) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(freq, time);
+        gain.gain.setValueAtTime(0.08, time);
+        gain.gain.exponentialRampToValueAtTime(0.001, time + duration);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(time);
+        osc.stop(time + duration);
+      };
+      playTone(now, 880, 0.12);
+      playTone(now + 0.08, 1150, 0.16);
+    } else if (sound === 'sonar') {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(1200, now);
+      osc.frequency.exponentialRampToValueAtTime(600, now + 0.4);
+      gain.gain.setValueAtTime(0.08, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(now);
+      osc.stop(now + 0.4);
+    } else if (sound === 'beep') {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'square';
+      osc.frequency.setValueAtTime(1000, now);
+      gain.gain.setValueAtTime(0.04, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(now);
+      osc.stop(now + 0.08);
+    } else if (sound === 'zen') {
+      const osc = ctx.createOscillator();
+      const osc2 = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(220, now);
+      osc2.type = 'sine';
+      osc2.frequency.setValueAtTime(225, now);
+      gain.gain.setValueAtTime(0.12, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.8);
+      osc.connect(gain);
+      osc2.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(now);
+      osc2.start(now);
+      osc.stop(now + 0.8);
+      osc2.stop(now + 0.8);
+    }
+  } catch (e) {
+    console.warn('Audio synthesis failed:', e);
+  }
+};
+
+const playSynthAlarm = (sound: string) => {
+  try {
+    const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+    const ctx = new AudioCtx();
+    const now = ctx.currentTime;
+    
+    if (sound === 'sawtooth_triple') {
+      const playTone = (time: number, freq: number, duration: number) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(freq, time);
+        gain.gain.setValueAtTime(0.1, time);
+        gain.gain.exponentialRampToValueAtTime(0.001, time + duration);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(time);
+        osc.stop(time + duration);
+      };
+      playTone(now, 988, 0.15);
+      playTone(now + 0.2, 784, 0.15);
+      playTone(now + 0.4, 988, 0.15);
+    } else if (sound === 'siren') {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(600, now);
+      osc.frequency.linearRampToValueAtTime(900, now + 0.25);
+      osc.frequency.linearRampToValueAtTime(600, now + 0.5);
+      gain.gain.setValueAtTime(0.12, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.5);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(now);
+      osc.stop(now + 0.5);
+    } else if (sound === 'bell') {
+      const playRing = (time: number) => {
+        const osc = ctx.createOscillator();
+        const osc2 = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(1500, time);
+        osc2.type = 'sine';
+        osc2.frequency.setValueAtTime(2200, time);
+        gain.gain.setValueAtTime(0.06, time);
+        gain.gain.exponentialRampToValueAtTime(0.001, time + 0.1);
+        osc.connect(gain);
+        osc2.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(time);
+        osc2.start(time);
+        osc.stop(time + 0.1);
+        osc2.stop(time + 0.1);
+      };
+      playRing(now);
+      playRing(now + 0.1);
+      playRing(now + 0.2);
+    } else if (sound === 'digital') {
+      const playBeep = (time: number) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'square';
+        osc.frequency.setValueAtTime(800, time);
+        gain.gain.setValueAtTime(0.05, time);
+        gain.gain.exponentialRampToValueAtTime(0.001, time + 0.08);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(time);
+        osc.stop(time + 0.08);
+      };
+      playBeep(now);
+      playBeep(now + 0.12);
+    }
+  } catch (e) {
+    console.warn('Audio synthesis failed:', e);
+  }
+};
+
 export const SettingsView: React.FC = () => {
   const { currentUser, profiles, switchUser, isDeveloper, isAdmin } = useAuth();
+  const { themePreset, setThemePreset, themeMode, setThemeMode, fontFamily, setFontFamily } = useTheme();
   const [activeTab, setActiveTab] = useState<TabType>('profile');
 
   const hasOnboardAccess = isAdmin;
@@ -42,6 +190,8 @@ export const SettingsView: React.FC = () => {
   const [messagePreviews, setMessagePreviews] = useState(true);
   const [googleChatWebhook, setGoogleChatWebhook] = useState('');
   const [notifSuccess, setNotifSuccess] = useState(false);
+  const [notificationSound, setNotificationSound] = useState('classic');
+  const [alarmSound, setAlarmSound] = useState('sawtooth_triple');
 
   // --- Security / Change Password States ---
   const [newPassword, setNewPassword] = useState('');
@@ -72,6 +222,8 @@ export const SettingsView: React.FC = () => {
     setSoundAlerts(notifSettings.soundAlerts);
     setMessagePreviews(notifSettings.messagePreviews);
     setGoogleChatWebhook(localStorage.getItem('relayhq_google_chat_webhook_url') || '');
+    setNotificationSound(localStorage.getItem('relayhq_notification_sound') || 'classic');
+    setAlarmSound(localStorage.getItem('relayhq_alarm_sound') || 'sawtooth_triple');
   }, [currentUser, activeTab]);
 
   // Profile Save Handler
@@ -249,6 +401,8 @@ export const SettingsView: React.FC = () => {
       messagePreviews
     });
     localStorage.setItem('relayhq_google_chat_webhook_url', googleChatWebhook.trim());
+    localStorage.setItem('relayhq_notification_sound', notificationSound);
+    localStorage.setItem('relayhq_alarm_sound', alarmSound);
     setNotifSuccess(true);
     setTimeout(() => setNotifSuccess(false), 2000);
   };
@@ -400,10 +554,93 @@ export const SettingsView: React.FC = () => {
                   </div>
                 </div>
 
+                <hr className="border-border/60" />
+
+                {/* Theme & Customization */}
+                <div className="space-y-4 pt-2">
+                  <h4 className="text-xs font-bold text-foreground uppercase tracking-wide flex items-center gap-1.5">
+                    <Palette className="h-4 w-4 text-primary" />
+                    <span>Workspace Theme & Personalization</span>
+                  </h4>
+                  <p className="text-[10px] text-muted-foreground leading-normal">
+                    Customize the look, colors, borders, and typography of your workspace. Changes apply immediately and persist.
+                  </p>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    {/* Theme Preset */}
+                    <div>
+                      <label className="block text-[10px] font-semibold text-muted-foreground uppercase tracking-wide mb-1.5">
+                        Theme Preset
+                      </label>
+                      <select
+                        value={themePreset}
+                        onChange={(e) => setThemePreset(e.target.value as any)}
+                        className="w-full text-xs bg-background border border-border text-foreground px-3 py-2.5 rounded-lg focus:outline-none focus:border-primary cursor-pointer font-semibold"
+                      >
+                        <option value="corporate">💼 Corporate Professional</option>
+                        <option value="glassmorphism">💎 Glassmorphism Elegance</option>
+                        <option value="neobrutalist">🎨 Neobrutalist Stark</option>
+                        <option value="minimalist">✉️ Minimalist Clean</option>
+                        <option value="retrofuturistic">👾 Retro-futuristic Glow</option>
+                        <option value="scandinavian">🍃 Scandinavian Zen</option>
+                      </select>
+                    </div>
+
+                    {/* Font Family */}
+                    <div>
+                      <label className="block text-[10px] font-semibold text-muted-foreground uppercase tracking-wide mb-1.5">
+                        Typography / Font
+                      </label>
+                      <select
+                        value={fontFamily}
+                        onChange={(e) => setFontFamily(e.target.value as any)}
+                        className="w-full text-xs bg-background border border-border text-foreground px-3 py-2.5 rounded-lg focus:outline-none focus:border-primary cursor-pointer font-semibold"
+                      >
+                        <option value="inter">Inter (Clean Sans)</option>
+                        <option value="outfit">Outfit (Geometric Sans)</option>
+                        <option value="space-grotesk">Space Grotesk (Modern Tech)</option>
+                        <option value="lora">Lora (Sophisticated Serif)</option>
+                        <option value="jetbrains-mono">JetBrains Mono (Developer)</option>
+                      </select>
+                    </div>
+
+                    {/* Day/Night Mode */}
+                    <div>
+                      <label className="block text-[10px] font-semibold text-muted-foreground uppercase tracking-wide mb-1.5">
+                        Appearance Mode
+                      </label>
+                      <div className="flex items-center gap-2 p-1 bg-muted/45 rounded-lg border border-border/60 w-fit">
+                        <button
+                          type="button"
+                          onClick={() => setThemeMode('light')}
+                          className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all cursor-pointer ${
+                            themeMode === 'light'
+                              ? 'bg-card shadow-sm text-foreground animate-none'
+                              : 'text-muted-foreground hover:text-foreground'
+                          }`}
+                        >
+                          ☀️ Light
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setThemeMode('dark')}
+                          className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all cursor-pointer ${
+                            themeMode === 'dark'
+                              ? 'bg-card shadow-sm text-foreground animate-none'
+                              : 'text-muted-foreground hover:text-foreground'
+                          }`}
+                        >
+                          🌙 Dark
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
                 <div className="flex flex-wrap gap-3 pt-2">
                   <button
                     type="submit"
-                    className="px-4 py-2 bg-primary hover:bg-primary/95 text-white rounded text-xs font-semibold shadow-sm transition-colors cursor-pointer font-bold"
+                    className="px-4 py-2 bg-primary hover:bg-primary/95 text-white rounded text-xs font-semibold shadow-sm transition-colors cursor-pointer font-bold animate-none"
                   >
                     Save Profile Changes
                   </button>
@@ -789,11 +1026,60 @@ export const SettingsView: React.FC = () => {
                       className="w-full text-xs bg-background border border-border text-foreground px-3 py-2 rounded focus:outline-none focus:border-primary font-mono"
                     />
                   </div>
+
+                  {/* Sound Selectors */}
+                  <div className="border-t border-border/40 pt-4 mt-2.5 space-y-4 md:col-span-2">
+                    <h4 className="text-xs font-bold text-foreground uppercase tracking-wide">
+                      🔊 Sound Profile Preferences
+                    </h4>
+                    
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-[10px] font-semibold text-muted-foreground uppercase tracking-wide mb-1.5">
+                          Notification Chime Sound
+                        </label>
+                        <select
+                          value={notificationSound}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            setNotificationSound(val);
+                            playSynthChime(val);
+                          }}
+                          className="w-full text-xs bg-background border border-border text-foreground px-3 py-2.5 rounded-lg focus:outline-none focus:border-primary cursor-pointer font-semibold animate-none"
+                        >
+                          <option value="classic">🔔 Classic Chime</option>
+                          <option value="sonar">📡 Sonar Sweep</option>
+                          <option value="beep">⚡ Digital Beep</option>
+                          <option value="zen">🧘 Zen Gong</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-[10px] font-semibold text-muted-foreground uppercase tracking-wide mb-1.5">
+                          Reminder Alarm Sound
+                        </label>
+                        <select
+                          value={alarmSound}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            setAlarmSound(val);
+                            playSynthAlarm(val);
+                          }}
+                          className="w-full text-xs bg-background border border-border text-foreground px-3 py-2.5 rounded-lg focus:outline-none focus:border-primary cursor-pointer font-semibold animate-none"
+                        >
+                          <option value="sawtooth_triple">🚨 Sawtooth Alert</option>
+                          <option value="siren">⚠️ Siren Warning</option>
+                          <option value="bell">🔔 Ringing Bell</option>
+                          <option value="digital">📟 Digital Staccato</option>
+                        </select>
+                      </div>
+                    </div>
+                  </div>
                 </div>
 
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-primary hover:bg-primary/95 text-white rounded text-xs font-semibold shadow-sm transition-colors cursor-pointer"
+                  className="px-4 py-2 bg-primary hover:bg-primary/95 text-white rounded text-xs font-semibold shadow-sm transition-colors cursor-pointer animate-none"
                 >
                   Save Notification Toggles
                 </button>
@@ -830,27 +1116,10 @@ export const SettingsView: React.FC = () => {
                       type="button"
                       onClick={() => {
                         try {
-                          const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
-                          const ctx = new AudioCtx();
-                          const playBeep = (time: number, freq: number, duration: number) => {
-                            const osc = ctx.createOscillator();
-                            const gain = ctx.createGain();
-                            osc.type = 'sine';
-                            osc.frequency.setValueAtTime(freq, time);
-                            gain.gain.setValueAtTime(0.08, time);
-                            gain.gain.exponentialRampToValueAtTime(0.001, time + duration);
-                            osc.connect(gain);
-                            gain.connect(ctx.destination);
-                            osc.start(time);
-                            osc.stop(time + duration);
-                          };
-                          const now = ctx.currentTime;
-                          playBeep(now, 880, 0.1);
-                          playBeep(now + 0.08, 1150, 0.14);
-
+                          playSynthChime(notificationSound);
                           if ('Notification' in window && Notification.permission === 'granted') {
                             new Notification('RelayHQ Sound Test', {
-                              body: 'This is a test desktop notification chime.',
+                              body: `This is a test desktop notification chime (${notificationSound}).`,
                               icon: '/favicon.ico'
                             });
                           }
@@ -866,28 +1135,10 @@ export const SettingsView: React.FC = () => {
                       type="button"
                       onClick={() => {
                         try {
-                          const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
-                          const ctx = new AudioCtx();
-                          const playBeep = (time: number, freq: number, duration: number) => {
-                            const osc = ctx.createOscillator();
-                            const gain = ctx.createGain();
-                            osc.type = 'sawtooth';
-                            osc.frequency.setValueAtTime(freq, time);
-                            gain.gain.setValueAtTime(0.12, time);
-                            gain.gain.exponentialRampToValueAtTime(0.001, time + duration);
-                            osc.connect(gain);
-                            gain.connect(ctx.destination);
-                            osc.start(time);
-                            osc.stop(time + duration);
-                          };
-                          const now = ctx.currentTime;
-                          playBeep(now, 988, 0.15);
-                          playBeep(now + 0.2, 784, 0.15);
-                          playBeep(now + 0.4, 988, 0.15);
-
+                          playSynthAlarm(alarmSound);
                           if ('Notification' in window && Notification.permission === 'granted') {
                             new Notification('RelayHQ Alarm Test', {
-                              body: '🚨 This is a test reminder alarm sound!',
+                              body: `🚨 This is a test reminder alarm sound (${alarmSound})!`,
                               icon: '/favicon.ico'
                             });
                           }

@@ -737,7 +737,7 @@ class MemoryDB {
   // Tasks CRUD
   getTasks(userId: string, role: string): Task[] {
     if (role === 'head') return this.tasks;
-    return this.tasks.filter((t) => t.creator_id === userId || t.assignee_id === userId || t.type === 'team');
+    return this.tasks.filter((t) => t.creator_id === userId || t.assignee_id === userId || t.assignee_ids?.includes(userId) || t.type === 'team');
   }
 
   createTask(taskData: Omit<Task, 'id' | 'creator_id' | 'created_at'>, userId: string): Task {
@@ -749,16 +749,23 @@ class MemoryDB {
     };
     this.tasks.unshift(newTask);
 
-    // Notify assignee
-    if (newTask.assignee_id && newTask.assignee_id !== userId) {
-      this.createNotification(
-        newTask.assignee_id,
-        'assignment_alert',
-        'New Task Assigned',
-        `${this.profiles.find(p => p.id === userId)?.full_name} assigned you: "${newTask.title}".`,
-        '/tasks'
-      );
-    }
+    // Notify assignees
+    const assignees = Array.from(new Set([
+      ...(newTask.assignee_id ? [newTask.assignee_id] : []),
+      ...(newTask.assignee_ids || [])
+    ]));
+
+    assignees.forEach((uid) => {
+      if (uid !== userId) {
+        this.createNotification(
+          uid,
+          'assignment_alert',
+          'New Task Assigned',
+          `${this.profiles.find(p => p.id === userId)?.full_name} assigned you: "${newTask.title}".`,
+          '/tasks'
+        );
+      }
+    });
 
     this.notify('tasks', 'insert', newTask);
     return newTask;

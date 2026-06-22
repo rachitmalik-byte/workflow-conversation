@@ -42,10 +42,24 @@ export const Header: React.FC<HeaderProps> = ({ currentView, onNavigate, onToggl
     }
   };
 
-  const selectPresence = async (status: 'online' | 'idle' | 'busy' | 'offline') => {
+  const selectPresence = async (status: 'online' | 'idle' | 'busy' | 'offline' | 'automatic') => {
     if (currentUser) {
       try {
-        await dbClient.updateProfile(currentUser.id, { presence: status });
+        if (status === 'automatic') {
+          localStorage.setItem('relayhq_presence_mode', 'automatic');
+          localStorage.removeItem('relayhq_presence_manual_until');
+          localStorage.removeItem('relayhq_presence_manual_status');
+          // Update presence immediately based on window focus
+          const autoStatus = document.hasFocus() ? 'online' : 'idle';
+          await dbClient.updateProfile(currentUser.id, { presence: autoStatus });
+        } else {
+          localStorage.setItem('relayhq_presence_mode', 'manual');
+          localStorage.setItem('relayhq_presence_manual_status', status);
+          // Set manual override timeout (e.g. 2.5 hours)
+          const durationMs = 2.5 * 60 * 60 * 1000;
+          localStorage.setItem('relayhq_presence_manual_until', String(Date.now() + durationMs));
+          await dbClient.updateProfile(currentUser.id, { presence: status });
+        }
       } catch (e) {
         console.error('Failed to change status:', e);
       }
@@ -151,38 +165,74 @@ export const Header: React.FC<HeaderProps> = ({ currentView, onNavigate, onToggl
           {presenceMenuOpen && (
             <>
               <div className="fixed inset-0 z-30" onClick={() => setPresenceMenuOpen(false)} />
-              <div className="absolute right-0 mt-2 z-40 w-40 rounded-md border border-border bg-card shadow-lg p-1 text-xs animate-slide-up">
+              <div className="absolute right-0 mt-2 z-40 w-44 rounded-md border border-border bg-card shadow-lg p-1 text-xs animate-slide-up">
                 <p className="px-2 py-1 text-[9px] font-bold text-muted-foreground uppercase tracking-wider">
                   Presence Status:
                 </p>
                 <hr className="border-border my-1" />
+                
+                <button
+                  onClick={() => selectPresence('automatic')}
+                  className="w-full text-left px-2 py-1.5 hover:bg-muted hover:text-foreground rounded transition-colors flex items-center justify-between cursor-pointer font-bold"
+                >
+                  <div className="flex items-center gap-2">
+                    <span className="h-2 w-2 rounded-full bg-blue-500 animate-pulse" />
+                    <span>Automatic</span>
+                  </div>
+                  {(localStorage.getItem('relayhq_presence_mode') || 'automatic') === 'automatic' && (
+                    <span className="text-[9px] text-primary">✓</span>
+                  )}
+                </button>
+
+                <hr className="border-border my-1" />
+
                 <button
                   onClick={() => selectPresence('online')}
-                  className="w-full text-left px-2 py-1.5 hover:bg-muted hover:text-foreground rounded transition-colors flex items-center gap-2 cursor-pointer font-medium"
+                  className="w-full text-left px-2 py-1.5 hover:bg-muted hover:text-foreground rounded transition-colors flex items-center justify-between cursor-pointer font-medium"
                 >
-                  <span className="h-2 w-2 rounded-full bg-success" />
-                  <span>Online</span>
+                  <div className="flex items-center gap-2">
+                    <span className="h-2 w-2 rounded-full bg-success" />
+                    <span>Online</span>
+                  </div>
+                  {localStorage.getItem('relayhq_presence_mode') === 'manual' && localStorage.getItem('relayhq_presence_manual_status') === 'online' && (
+                    <span className="text-[9px] text-primary">✓</span>
+                  )}
                 </button>
                 <button
                   onClick={() => selectPresence('idle')}
-                  className="w-full text-left px-2 py-1.5 hover:bg-muted hover:text-foreground rounded transition-colors flex items-center gap-2 cursor-pointer font-medium"
+                  className="w-full text-left px-2 py-1.5 hover:bg-muted hover:text-foreground rounded transition-colors flex items-center justify-between cursor-pointer font-medium"
                 >
-                  <span className="h-2 w-2 rounded-full bg-warning" />
-                  <span>Idle</span>
+                  <div className="flex items-center gap-2">
+                    <span className="h-2 w-2 rounded-full bg-warning" />
+                    <span>Idle</span>
+                  </div>
+                  {localStorage.getItem('relayhq_presence_mode') === 'manual' && localStorage.getItem('relayhq_presence_manual_status') === 'idle' && (
+                    <span className="text-[9px] text-primary">✓</span>
+                  )}
                 </button>
                 <button
                   onClick={() => selectPresence('busy')}
-                  className="w-full text-left px-2 py-1.5 hover:bg-muted hover:text-foreground rounded transition-colors flex items-center gap-2 cursor-pointer font-medium"
+                  className="w-full text-left px-2 py-1.5 hover:bg-muted hover:text-foreground rounded transition-colors flex items-center justify-between cursor-pointer font-medium"
                 >
-                  <span className="h-2 w-2 rounded-full bg-danger" />
-                  <span>Busy</span>
+                  <div className="flex items-center gap-2">
+                    <span className="h-2 w-2 rounded-full bg-danger" />
+                    <span>Busy</span>
+                  </div>
+                  {localStorage.getItem('relayhq_presence_mode') === 'manual' && localStorage.getItem('relayhq_presence_manual_status') === 'busy' && (
+                    <span className="text-[9px] text-primary">✓</span>
+                  )}
                 </button>
                 <button
                   onClick={() => selectPresence('offline')}
-                  className="w-full text-left px-2 py-1.5 hover:bg-muted hover:text-foreground rounded transition-colors flex items-center gap-2 cursor-pointer font-medium"
+                  className="w-full text-left px-2 py-1.5 hover:bg-muted hover:text-foreground rounded transition-colors flex items-center justify-between cursor-pointer font-medium"
                 >
-                  <span className="h-2 w-2 rounded-full bg-slate-400" />
-                  <span>Offline</span>
+                  <div className="flex items-center gap-2">
+                    <span className="h-2 w-2 rounded-full bg-slate-400" />
+                    <span>Offline</span>
+                  </div>
+                  {localStorage.getItem('relayhq_presence_mode') === 'manual' && localStorage.getItem('relayhq_presence_manual_status') === 'offline' && (
+                    <span className="text-[9px] text-primary">✓</span>
+                  )}
                 </button>
               </div>
             </>

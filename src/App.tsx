@@ -71,21 +71,65 @@ const MainAppContent: React.FC = () => {
     if (!settings.soundAlerts) return;
     try {
       const audioCtx = getAudioCtx();
-      const playBeep = (time: number, freq: number, duration: number) => {
+      const now = audioCtx.currentTime;
+      const sound = localStorage.getItem('relayhq_notification_sound') || 'classic';
+
+      if (sound === 'classic') {
+        const playTone = (time: number, freq: number, duration: number) => {
+          const osc = audioCtx.createOscillator();
+          const gain = audioCtx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(freq, time);
+          gain.gain.setValueAtTime(0.08, time);
+          gain.gain.exponentialRampToValueAtTime(0.001, time + duration);
+          osc.connect(gain);
+          gain.connect(audioCtx.destination);
+          osc.start(time);
+          osc.stop(time + duration);
+        };
+        playTone(now, 880, 0.12);
+        playTone(now + 0.08, 1150, 0.16);
+      } else if (sound === 'sonar') {
         const osc = audioCtx.createOscillator();
         const gain = audioCtx.createGain();
         osc.type = 'sine';
-        osc.frequency.setValueAtTime(freq, time);
-        gain.gain.setValueAtTime(0.08, time);
-        gain.gain.exponentialRampToValueAtTime(0.001, time + duration);
+        osc.frequency.setValueAtTime(1200, now);
+        osc.frequency.exponentialRampToValueAtTime(600, now + 0.4);
+        gain.gain.setValueAtTime(0.08, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
         osc.connect(gain);
         gain.connect(audioCtx.destination);
-        osc.start(time);
-        osc.stop(time + duration);
-      };
-      const now = audioCtx.currentTime;
-      playBeep(now, 880, 0.1);
-      playBeep(now + 0.08, 1150, 0.14);
+        osc.start(now);
+        osc.stop(now + 0.4);
+      } else if (sound === 'beep') {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'square';
+        osc.frequency.setValueAtTime(1000, now);
+        gain.gain.setValueAtTime(0.04, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start(now);
+        osc.stop(now + 0.08);
+      } else if (sound === 'zen') {
+        const osc = audioCtx.createOscillator();
+        const osc2 = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(220, now);
+        osc2.type = 'sine';
+        osc2.frequency.setValueAtTime(225, now);
+        gain.gain.setValueAtTime(0.12, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.8);
+        osc.connect(gain);
+        osc2.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start(now);
+        osc2.start(now);
+        osc.stop(now + 0.8);
+        osc2.stop(now + 0.8);
+      }
     } catch (err) {
       console.warn('AudioContext playback blocked/failed:', err);
     }
@@ -96,22 +140,76 @@ const MainAppContent: React.FC = () => {
     if (!settings.soundAlerts) return;
     try {
       const audioCtx = getAudioCtx();
-      const playBeep = (time: number, freq: number, duration: number) => {
+      const now = audioCtx.currentTime;
+      const sound = localStorage.getItem('relayhq_alarm_sound') || 'sawtooth_triple';
+
+      if (sound === 'sawtooth_triple') {
+        const playTone = (time: number, freq: number, duration: number) => {
+          const osc = audioCtx.createOscillator();
+          const gain = audioCtx.createGain();
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(freq, time);
+          gain.gain.setValueAtTime(0.1, time);
+          gain.gain.exponentialRampToValueAtTime(0.001, time + duration);
+          osc.connect(gain);
+          gain.connect(audioCtx.destination);
+          osc.start(time);
+          osc.stop(time + duration);
+        };
+        playTone(now, 988, 0.15);
+        playTone(now + 0.2, 784, 0.15);
+        playTone(now + 0.4, 988, 0.15);
+      } else if (sound === 'siren') {
         const osc = audioCtx.createOscillator();
         const gain = audioCtx.createGain();
-        osc.type = 'sawtooth';
-        osc.frequency.setValueAtTime(freq, time);
-        gain.gain.setValueAtTime(0.12, time);
-        gain.gain.exponentialRampToValueAtTime(0.001, time + duration);
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(600, now);
+        osc.frequency.linearRampToValueAtTime(900, now + 0.25);
+        osc.frequency.linearRampToValueAtTime(600, now + 0.5);
+        gain.gain.setValueAtTime(0.12, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.5);
         osc.connect(gain);
         gain.connect(audioCtx.destination);
-        osc.start(time);
-        osc.stop(time + duration);
-      };
-      const now = audioCtx.currentTime;
-      playBeep(now, 988, 0.15);
-      playBeep(now + 0.2, 784, 0.15);
-      playBeep(now + 0.4, 988, 0.15);
+        osc.start(now);
+        osc.stop(now + 0.5);
+      } else if (sound === 'bell') {
+        const playRing = (time: number) => {
+          const osc = audioCtx.createOscillator();
+          const osc2 = audioCtx.createOscillator();
+          const gain = audioCtx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(1500, time);
+          osc2.type = 'sine';
+          osc2.frequency.setValueAtTime(2200, time);
+          gain.gain.setValueAtTime(0.06, time);
+          gain.gain.exponentialRampToValueAtTime(0.001, time + 0.1);
+          osc.connect(gain);
+          osc2.connect(gain);
+          gain.connect(audioCtx.destination);
+          osc.start(time);
+          osc2.start(time);
+          osc.stop(time + 0.1);
+          osc2.stop(time + 0.1);
+        };
+        playRing(now);
+        playRing(now + 0.1);
+        playRing(now + 0.2);
+      } else if (sound === 'digital') {
+        const playBeep = (time: number) => {
+          const osc = audioCtx.createOscillator();
+          const gain = audioCtx.createGain();
+          osc.type = 'square';
+          osc.frequency.setValueAtTime(800, time);
+          gain.gain.setValueAtTime(0.05, time);
+          gain.gain.exponentialRampToValueAtTime(0.001, time + 0.08);
+          osc.connect(gain);
+          gain.connect(audioCtx.destination);
+          osc.start(time);
+          osc.stop(time + 0.08);
+        };
+        playBeep(now);
+        playBeep(now + 0.12);
+      }
     } catch (err) {
       console.warn('AudioContext playback blocked/failed:', err);
     }
@@ -202,7 +300,23 @@ const MainAppContent: React.FC = () => {
     
     let idleTimer: any;
     
+    const checkManualPresence = () => {
+      const mode = localStorage.getItem('relayhq_presence_mode') || 'automatic';
+      if (mode === 'manual') {
+        const until = parseInt(localStorage.getItem('relayhq_presence_manual_until') || '0', 10);
+        if (Date.now() > until) {
+          localStorage.setItem('relayhq_presence_mode', 'automatic');
+          localStorage.removeItem('relayhq_presence_manual_until');
+          localStorage.removeItem('relayhq_presence_manual_status');
+          return true;
+        }
+        return false;
+      }
+      return true;
+    };
+
     const setOnline = async () => {
+      if (!checkManualPresence()) return;
       if (currentUser.presence !== 'online') {
         try {
           await dbClient.updateProfile(currentUser.id, { presence: 'online' });
@@ -214,6 +328,7 @@ const MainAppContent: React.FC = () => {
     };
     
     const setIdle = async () => {
+      if (!checkManualPresence()) return;
       if (currentUser.presence === 'online') {
         try {
           await dbClient.updateProfile(currentUser.id, { presence: 'idle' });
@@ -230,6 +345,9 @@ const MainAppContent: React.FC = () => {
     };
     
     const handleActivity = () => {
+      const active = checkManualPresence();
+      if (!active) return;
+
       // Only transition back to online if the user is currently idle or has no status
       if (currentUser.presence === 'idle' || !currentUser.presence) {
         setOnline();
@@ -240,13 +358,12 @@ const MainAppContent: React.FC = () => {
     
     // Set initial presence if empty
     if (!currentUser.presence) {
-      dbClient.updateProfile(currentUser.id, { presence: 'online' });
+      const mode = localStorage.getItem('relayhq_presence_mode') || 'automatic';
+      if (mode === 'automatic') {
+        dbClient.updateProfile(currentUser.id, { presence: 'online' });
+      }
     }
     resetIdleTimer();
-    
-    window.addEventListener('mousemove', handleActivity);
-    window.addEventListener('click', handleActivity);
-    window.addEventListener('keydown', handleActivity);
     
     const handleFocus = () => {
       setOnline();
@@ -257,7 +374,10 @@ const MainAppContent: React.FC = () => {
     };
 
     const handleUnload = () => {
-      dbClient.updateProfile(currentUser.id, { presence: 'offline' });
+      const mode = localStorage.getItem('relayhq_presence_mode') || 'automatic';
+      if (mode === 'automatic') {
+        dbClient.updateProfile(currentUser.id, { presence: 'offline' });
+      }
     };
 
     window.addEventListener('mousemove', handleActivity);
@@ -326,7 +446,23 @@ const MainAppContent: React.FC = () => {
 
   useEffect(() => {
     checkDueReminders();
-    const interval = setInterval(checkDueReminders, 5000);
+    const interval = setInterval(() => {
+      checkDueReminders();
+      // Periodic check for presence override expiration
+      const mode = localStorage.getItem('relayhq_presence_mode') || 'automatic';
+      if (mode === 'manual') {
+        const until = parseInt(localStorage.getItem('relayhq_presence_manual_until') || '0', 10);
+        if (Date.now() > until) {
+          localStorage.setItem('relayhq_presence_mode', 'automatic');
+          localStorage.removeItem('relayhq_presence_manual_until');
+          localStorage.removeItem('relayhq_presence_manual_status');
+          // Re-trigger online presence check
+          if (currentUser) {
+            dbClient.updateProfile(currentUser.id, { presence: document.hasFocus() ? 'online' : 'idle' });
+          }
+        }
+      }
+    }, 5000);
 
 
     const unsubscribe = dbClient.subscribe((table, type, payload) => {

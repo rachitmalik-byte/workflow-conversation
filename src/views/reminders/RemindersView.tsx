@@ -61,6 +61,11 @@ export const RemindersView: React.FC = () => {
     }
 
     try {
+      // Notification permission request check before reminder save
+      if ('Notification' in window && Notification.permission === 'default') {
+        await Notification.requestPermission();
+      }
+
       const offsets = offsetsInput
         .split(',')
         .map((x) => parseInt(x.trim(), 10))

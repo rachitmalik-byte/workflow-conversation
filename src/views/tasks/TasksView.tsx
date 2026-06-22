@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { dbClient } from '../../services/dbClient';
 import { useAuth } from '../../context/AuthContext';
 import type { Task, TaskPriority, TaskStatus, TaskType } from '../../types/database';
-import { AlertCircle, CheckSquare, Clock, Plus, Trash2, User, Paperclip } from 'lucide-react';
+import { AlertCircle, CheckSquare, Clock, Plus, Trash2, Paperclip } from 'lucide-react';
 
 export const TasksView: React.FC = () => {
   const { currentUser, profiles } = useAuth();
@@ -17,7 +17,7 @@ export const TasksView: React.FC = () => {
   const [description, setDescription] = useState('');
   const [priority, setPriority] = useState<TaskPriority>('medium');
   const [type, setType] = useState<TaskType>('personal');
-  const [assigneeId, setAssigneeId] = useState('');
+  const [assigneeIds, setAssigneeIds] = useState<string[]>([]);
   const [assigneeSearchText, setAssigneeSearchText] = useState('');
   const [deadline, setDeadline] = useState('');
   const [offsetsInput, setOffsetsInput] = useState('15, 30');
@@ -53,11 +53,9 @@ export const TasksView: React.FC = () => {
   useEffect(() => {
     if (isCreating) {
       if (type === 'personal') {
-        setAssigneeId(currentUser?.id || '');
-      } else if (type === 'team') {
-        setAssigneeId('');
-      } else if (type === 'assigned' && assigneeId === (currentUser?.id || '')) {
-        setAssigneeId(''); // Reset selection to force picking another user
+        setAssigneeIds([currentUser?.id || '']);
+      } else {
+        setAssigneeIds([]);
       }
     }
   }, [currentUser, isCreating, type]);
@@ -68,6 +66,10 @@ export const TasksView: React.FC = () => {
       setError('Task title is required.');
       return;
     }
+    if (type === 'assigned' && assigneeIds.length === 0) {
+      setError('Please assign at least one teammate.');
+      return;
+    }
 
     try {
       const offsets = offsetsInput
@@ -75,10 +77,22 @@ export const TasksView: React.FC = () => {
         .map((x) => parseInt(x.trim(), 10))
         .filter((x) => !isNaN(x));
 
+      // Notification permission request check before task save
+      if ('Notification' in window && Notification.permission === 'default') {
+        await Notification.requestPermission();
+      }
+
+      const selectedAssignees = type === 'personal'
+        ? [currentUser?.id || '']
+        : type === 'assigned'
+        ? assigneeIds
+        : [];
+
       await dbClient.createTask({
         title: title.trim(),
         description: description.trim(),
-        assignee_id: type === 'team' ? undefined : (assigneeId || undefined),
+        assignee_id: selectedAssignees[0] || undefined,
+        assignee_ids: selectedAssignees,
         priority,
         type,
         deadline: deadline ? new Date(deadline).toISOString() : undefined,
@@ -95,6 +109,7 @@ export const TasksView: React.FC = () => {
       setDeadline('');
       setOffsetsInput('15, 30');
       setTaskAttachments([]);
+      setAssigneeIds([]);
       setError(null);
       setIsCreating(false);
       fetchTasks();
@@ -239,32 +254,44 @@ export const TasksView: React.FC = () => {
             </div>
 
             {type === 'assigned' && (
-              <div className="space-y-1">
-                <label className="block text-xs font-medium text-muted-foreground mb-1">
-                  Assign To <span className="text-danger">*</span>
+              <div className="space-y-2">
+                <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                  Assign To Team Members <span className="text-danger">*</span>
                 </label>
                 <input
                   type="text"
-                  placeholder="Filter specialists by name..."
+                  placeholder="Search teammates by name..."
                   value={assigneeSearchText}
                   onChange={(e) => setAssigneeSearchText(e.target.value)}
-                  className="w-full text-xs bg-background border border-border text-foreground px-3 py-1.5 rounded focus:outline-none focus:border-primary mb-1"
+                  className="w-full text-xs bg-background border border-border text-foreground px-3 py-2 rounded-lg focus:outline-none focus:border-primary mb-2"
                 />
-                <select
-                  value={assigneeId}
-                  required
-                  onChange={(e) => setAssigneeId(e.target.value)}
-                  className="w-full text-sm bg-background border border-border text-foreground px-3 py-2 rounded focus:outline-none focus:border-primary cursor-pointer"
-                >
-                  <option value="">Select Growth Specialist...</option>
+                <div className="max-h-40 overflow-y-auto border border-border rounded-lg p-2.5 space-y-2 bg-background/50">
                   {profiles
                     .filter((p) => p.status === 'active' && p.full_name.toLowerCase().includes(assigneeSearchText.toLowerCase()))
-                    .map((p) => (
-                      <option key={p.id} value={p.id}>
-                        {p.full_name} ({p.role === 'head' ? 'Head' : 'Specialist'})
-                      </option>
-                    ))}
-                </select>
+                    .map((p) => {
+                      const isChecked = assigneeIds.includes(p.id);
+                      return (
+                        <label key={p.id} className="flex items-center gap-2 text-xs font-medium text-foreground cursor-pointer hover:bg-muted/40 p-1.5 rounded transition-colors">
+                          <input
+                            type="checkbox"
+                            checked={isChecked}
+                            onChange={() => {
+                              if (isChecked) {
+                                setAssigneeIds(assigneeIds.filter(id => id !== p.id));
+                              } else {
+                                setAssigneeIds([...assigneeIds, p.id]);
+                              }
+                            }}
+                            className="h-3.5 w-3.5 rounded border-border text-primary focus:ring-primary cursor-pointer"
+                          />
+                          <span>{p.full_name} ({p.role === 'head' ? 'Head' : 'Specialist'})</span>
+                        </label>
+                      );
+                    })}
+                  {profiles.filter((p) => p.status === 'active' && p.full_name.toLowerCase().includes(assigneeSearchText.toLowerCase())).length === 0 && (
+                    <p className="text-xs text-muted-foreground text-center py-2">No matching active teammates</p>
+                  )}
+                </div>
               </div>
             )}
 
@@ -455,10 +482,43 @@ export const TasksView: React.FC = () => {
                         )}
 
                         {task.type !== 'personal' && (
-                          <span className="flex items-center gap-1 text-muted-foreground">
-                            <User className="h-3 w-3" />
-                            <span>For: {getProfileName(task.assignee_id)}</span>
-                          </span>
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wide">For:</span>
+                            <div className="flex flex-wrap gap-1">
+                              {task.assignee_ids && task.assignee_ids.length > 0 ? (
+                                task.assignee_ids.map((uid) => {
+                                  const name = getProfileName(uid);
+                                  const initials = name
+                                    .split(' ')
+                                    .map((n) => n[0])
+                                    .join('')
+                                    .substring(0, 2)
+                                    .toUpperCase();
+                                  return (
+                                    <span
+                                      key={uid}
+                                      title={name}
+                                      className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-primary/10 border border-primary/20 text-[10px] font-bold text-primary shadow-sm"
+                                    >
+                                      <span className="h-4 w-4 rounded-full bg-primary/20 flex items-center justify-center text-[8px] font-black">
+                                        {initials}
+                                      </span>
+                                      {name}
+                                    </span>
+                                  );
+                                })
+                              ) : task.assignee_id ? (
+                                <span
+                                  title={getProfileName(task.assignee_id)}
+                                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-primary/10 border border-primary/20 text-[10px] font-bold text-primary shadow-sm"
+                                >
+                                  {getProfileName(task.assignee_id)}
+                                </span>
+                              ) : (
+                                <span className="text-[10px] text-muted-foreground font-semibold">Unassigned</span>
+                              )}
+                            </div>
+                          </div>
                         )}
                       </div>
 

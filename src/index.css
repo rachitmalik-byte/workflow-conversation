@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@300;400;500;600;700&family=Outfit:wght@300;400;500;600;700;800;900&family=Lora:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Space+Grotesk:wght@300;400;500;600;700&display=swap');
 
 @theme {
   --color-background: hsl(var(--background));
@@ -44,66 +45,324 @@
 }
 
 @layer base {
-  :root {
-    --background: 210 40% 98%; /* slate-50 */
-    --foreground: 222.2 84% 4.9%; /* slate-950 */
-    
-    --card: 0 0% 100%; /* white */
+  /* ==================== FONT PRESETS ==================== */
+  html[data-font="inter"] { --font-sans: 'Inter', sans-serif; }
+  html[data-font="outfit"] { --font-sans: 'Outfit', sans-serif; }
+  html[data-font="space-grotesk"] { --font-sans: 'Space Grotesk', sans-serif; }
+  html[data-font="lora"] { --font-sans: 'Lora', serif; }
+  html[data-font="jetbrains-mono"] { --font-sans: 'JetBrains Mono', monospace; }
+
+  /* ==================== 1. CORPORATE (Default) ==================== */
+  html[data-theme-preset="corporate"] {
+    --background: 210 40% 98%;
+    --foreground: 222.2 84% 4.9%;
+    --card: 0 0% 100%;
     --card-foreground: 222.2 84% 4.9%;
-    
     --popover: 0 0% 100%;
     --popover-foreground: 222.2 84% 4.9%;
-    
-    --primary: 221.2 83.2% 53.3%; /* #2563EB */
+    --primary: 221.2 83.2% 53.3%;
     --primary-foreground: 210 40% 98%;
-    
-    --secondary: 222.2 47.4% 11.2%; /* #0F172A */
+    --secondary: 222.2 47.4% 11.2%;
     --secondary-foreground: 210 40% 98%;
-    
-    --muted: 210 40% 96.1%; /* slate-100 */
-    --muted-foreground: 215.4 16.3% 46.9%; /* slate-500 */
-    
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
     --accent: 210 40% 96.1%;
     --accent-foreground: 222.2 47.4% 11.2%;
-    
-    --success: 162.2 75.6% 41%; /* #10B981 */
-    --warning: 37.7 92.1% 50.2%; /* #F59E0B */
-    --danger: 348.3 84.5% 60.2%; /* #EF4444 */
-    
-    --border: 214.3 31.8% 91.4%; /* slate-200 */
-    --input: 214.3 31.8% 91.4%;
-    --ring: 221.2 83.2% 53.3%;
-  }
-
-  .dark {
-    --background: 222.2 47.4% 11.2%; /* slate-950 */
-    --foreground: 210 40% 98%;
-    
-    --card: 222.2 47.4% 8%; /* darker slate */
-    --card-foreground: 210 40% 98%;
-    
-    --popover: 222.2 47.4% 8%;
-    --popover-foreground: 210 40% 98%;
-    
-    --primary: 217.2 91.2% 59.8%;
-    --primary-foreground: 222.2 47.4% 11.2%;
-    
-    --secondary: 217.2 32.6% 17.5%; /* slate-800 */
-    --secondary-foreground: 210 40% 98%;
-    
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%; /* slate-400 */
-    
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
-    
     --success: 162.2 75.6% 41%;
     --warning: 37.7 92.1% 50.2%;
     --danger: 348.3 84.5% 60.2%;
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 221.2 83.2% 53.3%;
     
-    --border: 217.2 32.6% 17.5%; /* slate-800 */
+    --radius-card: 0.5rem;
+    --shadow-card: 0 1px 3px 0 rgba(0, 0, 0, 0.08), 0 1px 2px -1px rgba(0, 0, 0, 0.08);
+    --border-card: 1px solid hsl(var(--border));
+    --blur-card: none;
+    --card-opacity: 1;
+    --svg-stroke: 2px;
+  }
+  html[data-theme-preset="corporate"].dark {
+    --background: 222.2 47.4% 11.2%;
+    --foreground: 210 40% 98%;
+    --card: 222.2 47.4% 8%;
+    --card-foreground: 210 40% 98%;
+    --popover: 222.2 47.4% 8%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 217.2 91.2% 59.8%;
+    --primary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+    --border: 217.2 32.6% 17.5%;
     --input: 217.2 32.6% 17.5%;
     --ring: 224.3 76.3% 48%;
+  }
+
+  /* ==================== 2. GLASSMORPHISM ==================== */
+  html[data-theme-preset="glassmorphism"] {
+    --background: 260 20% 96%;
+    --foreground: 224 71.4% 4.1%;
+    --card: 0 0% 100%;
+    --card-foreground: 224 71.4% 4.1%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 224 71.4% 4.1%;
+    --primary: 262.1 83.3% 57.8%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 262.1 30% 20%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 262 30% 92%;
+    --muted-foreground: 262 15% 45%;
+    --accent: 262 30% 93%;
+    --accent-foreground: 262.1 83.3% 57.8%;
+    --success: 150 80% 38%;
+    --warning: 35 90% 50%;
+    --danger: 0 85% 60%;
+    --border: 262 30% 88%;
+    --input: 262 30% 88%;
+    --ring: 262.1 83.3% 57.8%;
+    
+    --radius-card: 1rem;
+    --shadow-card: 0 8px 32px 0 rgba(142, 68, 173, 0.05);
+    --border-card: 1px solid rgba(255, 255, 255, 0.5);
+    --blur-card: blur(12px);
+    --card-opacity: 0.65;
+    --svg-stroke: 2px;
+  }
+  html[data-theme-preset="glassmorphism"].dark {
+    --background: 260 25% 6%;
+    --foreground: 0 0% 98%;
+    --card: 260 25% 10%;
+    --card-foreground: 0 0% 98%;
+    --popover: 260 25% 9%;
+    --popover-foreground: 0 0% 98%;
+    --primary: 263.4 80% 62%;
+    --primary-foreground: 260 25% 6%;
+    --secondary: 260 25% 15%;
+    --secondary-foreground: 0 0% 98%;
+    --muted: 260 20% 15%;
+    --muted-foreground: 260 10% 70%;
+    --accent: 260 20% 16%;
+    --accent-foreground: 263.4 80% 62%;
+    --border: 260 20% 16%;
+    --input: 260 20% 16%;
+    --ring: 263.4 80% 62%;
+    
+    --shadow-card: 0 8px 32px 0 rgba(0, 0, 0, 0.35);
+    --border-card: 1px solid rgba(255, 255, 255, 0.08);
+    --blur-card: blur(16px);
+    --card-opacity: 0.45;
+  }
+
+  /* ==================== 3. NEOBRUTALIST ==================== */
+  html[data-theme-preset="neobrutalist"] {
+    --background: 43 100% 97%;
+    --foreground: 0 0% 0%;
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 0%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 0%;
+    --primary: 48 96% 53%; /* Neo Brutalist Yellow */
+    --primary-foreground: 0 0% 0%;
+    --secondary: 0 0% 0%;
+    --secondary-foreground: 0 0% 100%;
+    --muted: 43 20% 90%;
+    --muted-foreground: 0 0% 25%;
+    --accent: 198 90% 75%; /* Neo Blue */
+    --accent-foreground: 0 0% 0%;
+    --success: 142 70% 45%;
+    --warning: 32 95% 50%;
+    --danger: 350 85% 55%;
+    --border: 0 0% 0%;
+    --input: 0 0% 0%;
+    --ring: 0 0% 0%;
+    
+    --radius-card: 4px;
+    --shadow-card: 5px 5px 0px 0px #000000;
+    --border-card: 2.5px solid #000000;
+    --blur-card: none;
+    --card-opacity: 1;
+    --svg-stroke: 2.5px;
+  }
+  html[data-theme-preset="neobrutalist"].dark {
+    --background: 0 0% 6%;
+    --foreground: 0 0% 100%;
+    --card: 0 0% 11%;
+    --card-foreground: 0 0% 100%;
+    --popover: 0 0% 10%;
+    --popover-foreground: 0 0% 100%;
+    --primary: 25 100% 60%; /* Orange glow */
+    --primary-foreground: 0 0% 0%;
+    --secondary: 0 0% 100%;
+    --secondary-foreground: 0 0% 0%;
+    --muted: 0 0% 18%;
+    --muted-foreground: 0 0% 75%;
+    --accent: 180 100% 40%; /* Neon Cyan */
+    --accent-foreground: 0 0% 0%;
+    --border: 0 0% 100%;
+    --input: 0 0% 100%;
+    --ring: 0 0% 100%;
+    
+    --shadow-card: 5px 5px 0px 0px #ffffff;
+    --border-card: 2.5px solid #ffffff;
+  }
+
+  /* ==================== 4. MINIMALIST ==================== */
+  html[data-theme-preset="minimalist"] {
+    --background: 0 0% 100%;
+    --foreground: 240 10% 4%;
+    --card: 0 0% 100%;
+    --card-foreground: 240 10% 4%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 240 10% 4%;
+    --primary: 240 5.9% 10%;
+    --primary-foreground: 0 0% 98%;
+    --secondary: 240 5.9% 90%;
+    --secondary-foreground: 240 10% 4%;
+    --muted: 240 5.9% 96%;
+    --muted-foreground: 240 4% 46%;
+    --accent: 240 5.9% 95%;
+    --accent-foreground: 240 10% 4%;
+    --success: 160 84% 35%;
+    --warning: 40 80% 45%;
+    --danger: 350 80% 50%;
+    --border: 240 5.9% 92%;
+    --input: 240 5.9% 92%;
+    --ring: 240 5.9% 10%;
+    
+    --radius-card: 0px;
+    --shadow-card: none;
+    --border-card: 1px solid hsl(var(--border));
+    --blur-card: none;
+    --card-opacity: 1;
+    --svg-stroke: 1.5px;
+  }
+  html[data-theme-preset="minimalist"].dark {
+    --background: 240 10% 4%;
+    --foreground: 0 0% 98%;
+    --card: 240 10% 6%;
+    --card-foreground: 0 0% 98%;
+    --popover: 240 10% 5%;
+    --popover-foreground: 0 0% 98%;
+    --primary: 0 0% 98%;
+    --primary-foreground: 240 10% 4%;
+    --secondary: 240 5.9% 15%;
+    --secondary-foreground: 0 0% 98%;
+    --muted: 240 5.9% 12%;
+    --muted-foreground: 240 5% 65%;
+    --accent: 240 5.9% 14%;
+    --accent-foreground: 0 0% 98%;
+    --border: 240 5.9% 16%;
+    --input: 240 5.9% 16%;
+    --ring: 0 0% 98%;
+  }
+
+  /* ==================== 5. RETRO-FUTURISTIC ==================== */
+  html[data-theme-preset="retrofuturistic"] {
+    --background: 330 20% 97%;
+    --foreground: 330 60% 12%;
+    --card: 0 0% 100%;
+    --card-foreground: 330 60% 12%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 330 60% 12%;
+    --primary: 325 85% 48%; /* Neon Pink Chime */
+    --primary-foreground: 0 0% 100%;
+    --secondary: 190 90% 30%;
+    --secondary-foreground: 0 0% 100%;
+    --muted: 330 20% 92%;
+    --muted-foreground: 330 25% 45%;
+    --accent: 190 85% 94%;
+    --accent-foreground: 190 95% 35%;
+    --success: 145 75% 35%;
+    --warning: 35 90% 45%;
+    --danger: 345 85% 50%;
+    --border: 330 20% 88%;
+    --input: 330 20% 88%;
+    --ring: 325 85% 48%;
+    
+    --radius-card: 6px;
+    --shadow-card: 0 2px 8px rgba(244, 3, 140, 0.05);
+    --border-card: 1px solid hsl(var(--border));
+    --blur-card: none;
+    --card-opacity: 1;
+    --svg-stroke: 2px;
+  }
+  html[data-theme-preset="retrofuturistic"].dark {
+    --background: 275 45% 6%;
+    --foreground: 300 30% 96%;
+    --card: 275 45% 10%;
+    --card-foreground: 300 30% 96%;
+    --popover: 275 45% 9%;
+    --popover-foreground: 300 30% 96%;
+    --primary: 320 100% 60%; /* Glowing Magenta */
+    --primary-foreground: 275 45% 5%;
+    --secondary: 185 100% 50%; /* Glowing Cyan */
+    --secondary-foreground: 275 45% 5%;
+    --muted: 275 30% 16%;
+    --muted-foreground: 275 10% 70%;
+    --accent: 275 30% 18%;
+    --accent-foreground: 320 100% 60%;
+    --border: 290 80% 28%; /* Glowing Violet border */
+    --input: 290 80% 28%;
+    --ring: 320 100% 60%;
+    
+    --shadow-card: 0 0 14px rgba(244, 3, 140, 0.22);
+    --border-card: 1.5px solid hsl(var(--border));
+  }
+
+  /* ==================== 6. SCANDINAVIAN / JAPANDI ==================== */
+  html[data-theme-preset="scandinavian"] {
+    --background: 30 22% 94%; /* Warm cream sand */
+    --foreground: 25 15% 16%; /* Charcoal Earth */
+    --card: 30 35% 98%;
+    --card-foreground: 25 15% 16%;
+    --popover: 30 35% 98%;
+    --popover-foreground: 25 15% 16%;
+    --primary: 25 38% 36%; /* Terracotta */
+    --primary-foreground: 30 35% 98%;
+    --secondary: 35 15% 25%; /* Olive-ish brown */
+    --secondary-foreground: 30 35% 98%;
+    --muted: 30 18% 88%;
+    --muted-foreground: 30 8% 46%;
+    --accent: 30 22% 90%;
+    --accent-foreground: 25 38% 36%;
+    --success: 155 35% 40%; /* Sage green */
+    --warning: 38 60% 48%;
+    --danger: 15 65% 50%;
+    --border: 30 14% 86%;
+    --input: 30 14% 86%;
+    --ring: 25 38% 36%;
+    
+    --radius-card: 1.25rem; /* Cozy roundness */
+    --shadow-card: 0 4px 18px 0 rgba(139, 90, 43, 0.03);
+    --border-card: 1px solid hsl(var(--border));
+    --blur-card: none;
+    --card-opacity: 1;
+    --svg-stroke: 1.75px;
+  }
+  html[data-theme-preset="scandinavian"].dark {
+    --background: 30 8% 9%; /* Dark warm charcoal */
+    --foreground: 30 15% 90%;
+    --card: 30 6% 13%; /* Cozy dark charcoal */
+    --card-foreground: 30 15% 90%;
+    --popover: 30 6% 12%;
+    --popover-foreground: 30 15% 90%;
+    --primary: 32 30% 70%; /* Soft warm gold mustard */
+    --primary-foreground: 30 8% 8%;
+    --secondary: 30 6% 20%;
+    --secondary-foreground: 30 15% 90%;
+    --muted: 30 6% 18%;
+    --muted-foreground: 30 10% 70%;
+    --accent: 30 6% 19%;
+    --accent-foreground: 32 30% 70%;
+    --border: 30 6% 21%;
+    --input: 30 6% 21%;
+    --ring: 32 30% 70%;
+    
+    --shadow-card: 0 6px 24px 0 rgba(0, 0, 0, 0.25);
   }
 }
 
@@ -114,6 +373,65 @@
   body {
     @apply bg-background text-foreground font-sans antialiased;
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+    font-family: var(--font-sans, 'Inter', sans-serif);
+    transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+  }
+
+  /* Dynamic svg stroke adjustments based on theme variable */
+  svg {
+    stroke-width: var(--svg-stroke, 2px);
+    transition: stroke-width 0.2s ease;
+  }
+
+  /* Card Morphing */
+  .bg-card {
+    border-radius: var(--radius-card, 0.5rem) !important;
+    box-shadow: var(--shadow-card, 0 1px 3px rgba(0,0,0,0.1)) !important;
+    border: var(--border-card, 1px solid var(--color-border)) !important;
+    backdrop-filter: var(--blur-card, none) !important;
+    background-color: hsla(var(--card) / var(--card-opacity, 1)) !important;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  /* Form inputs morphing */
+  input, select, textarea {
+    border-radius: calc(var(--radius-card, 0.5rem) * 0.75) !important;
+    transition: all 0.2s ease;
+  }
+  
+  html[data-theme-preset="neobrutalist"] input,
+  html[data-theme-preset="neobrutalist"] select,
+  html[data-theme-preset="neobrutalist"] textarea {
+    border: 2px solid #000 !important;
+    box-shadow: 2px 2px 0px #000;
+  }
+  html[data-theme-preset="neobrutalist"].dark input,
+  html[data-theme-preset="neobrutalist"].dark select,
+  html[data-theme-preset="neobrutalist"].dark textarea {
+    border: 2px solid #fff !important;
+    box-shadow: 2px 2px 0px #fff;
+  }
+  html[data-theme-preset="neobrutalist"] button.bg-primary {
+    border: 2px solid #000 !important;
+    box-shadow: 2.5px 2.5px 0px #000 !important;
+    color: #000 !important;
+    font-weight: 800 !important;
+  }
+  html[data-theme-preset="neobrutalist"].dark button.bg-primary {
+    border: 2px solid #fff !important;
+    box-shadow: 2.5px 2.5px 0px #fff !important;
+    color: #000 !important;
+    font-weight: 800 !important;
+  }
+
+  /* Button Morphing */
+  .rounded-md, .rounded-lg, .rounded {
+    border-radius: calc(var(--radius-card, 0.5rem) * 0.75) !important;
+  }
+
+  html[data-theme-preset="glassmorphism"] button.bg-primary {
+    background: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--primary) / 0.8) 100%) !important;
+    box-shadow: 0 4px 15px hsl(var(--primary) / 0.2) !important;
   }
 }
 
