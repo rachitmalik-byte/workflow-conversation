@@ -1011,16 +1011,16 @@ export const MessagingView: React.FC = () => {
                         <div className={`flex gap-2 max-w-[75%] items-end ${isOutgoing ? 'flex-row-reverse' : 'flex-row'}`}>
                           {/* Avatar */}
                           <div className={`flex h-6 w-6 items-center justify-center rounded-full font-bold text-[9px] uppercase flex-shrink-0 ${
-                            isOutgoing ? 'bg-blue-600 text-white' : 'bg-primary/10 text-primary'
+                            isOutgoing ? 'bg-primary text-primary-foreground' : 'bg-primary/10 text-primary'
                           }`}>
                             {msg.sender_name.split(' ').map((n: string) => n[0]).join('') || '?'}
                           </div>
                           
                           {/* Bubble content */}
-                          <div className={`px-3.5 py-2 rounded-2xl shadow-sm text-xs border w-fit max-w-full ${
+                          <div className={`px-3.5 py-2 shadow-sm text-xs w-fit max-w-full chat-bubble ${
                             isOutgoing 
-                              ? 'bg-blue-600 text-white border-blue-700/40 rounded-tr-none' 
-                              : 'bg-card border-border text-foreground rounded-tl-none'
+                              ? 'chat-bubble-outgoing rounded-tr-none' 
+                              : 'chat-bubble-incoming rounded-tl-none'
                           }`}>
                             <span className={`block text-[10px] font-extrabold mb-1 ${
                               isOutgoing ? 'text-blue-100' : getNameColor(msg.sender_name)
@@ -1085,7 +1085,7 @@ export const MessagingView: React.FC = () => {
                           if (senderProfile) setSelectedProfile(senderProfile);
                         }}
                         className={`flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-md font-bold text-[10px] uppercase flex-shrink-0 shadow-sm cursor-pointer hover:ring-2 hover:ring-primary transition-all ${
-                          isOutgoing ? 'bg-blue-600 text-white' : 'bg-secondary text-white border border-border/50'
+                          isOutgoing ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground border border-border/50'
                         }`}
                         title={`View ${senderName}'s Profile`}
                       >
@@ -1143,10 +1143,10 @@ export const MessagingView: React.FC = () => {
                           </div>
                         )}
 
-                        <div className={`px-4 py-2.5 rounded-2xl shadow-sm text-sm border w-fit max-w-full ${
+                        <div className={`px-4 py-2.5 shadow-sm text-sm w-fit max-w-full chat-bubble ${
                           isOutgoing 
-                            ? 'bg-blue-600 text-white border-blue-700/40 rounded-br-sm' 
-                            : 'bg-card border-border text-foreground rounded-bl-sm'
+                            ? 'chat-bubble-outgoing rounded-br-sm' 
+                            : 'chat-bubble-incoming rounded-bl-sm'
                         }`}>
                           <div className={`flex items-baseline gap-2 mb-1 justify-between ${isOutgoing ? 'flex-row-reverse' : 'flex-row'}`}>
                             <span className={`block text-[11px] font-extrabold tracking-wide ${
@@ -1205,7 +1205,7 @@ export const MessagingView: React.FC = () => {
                                       alert('Failed to save changes');
                                     }
                                   }}
-                                  className="px-2.5 py-0.5 bg-primary text-white text-[10px] rounded font-bold transition-colors shadow-sm"
+                                  className="px-2.5 py-0.5 bg-primary text-primary-foreground text-[10px] rounded font-bold transition-colors shadow-sm"
                                 >
                                   Save
                                 </button>
@@ -1278,7 +1278,7 @@ export const MessagingView: React.FC = () => {
               <button
                 type="submit"
                 disabled={!messageInput.trim()}
-                className="p-1.5 bg-primary hover:bg-primary/95 text-white disabled:opacity-40 rounded transition-colors cursor-pointer"
+                className="p-1.5 bg-primary hover:bg-primary/95 text-primary-foreground disabled:opacity-40 rounded transition-colors cursor-pointer"
               >
                 <Send className="h-3.5 w-3.5" />
               </button>
@@ -1347,7 +1347,7 @@ export const MessagingView: React.FC = () => {
                 </button>
                 <button
                   type="submit"
-                  className="px-3 py-1.5 text-xs font-semibold bg-primary text-white rounded hover:bg-primary/95"
+                  className="px-3 py-1.5 text-xs font-semibold bg-primary text-primary-foreground rounded hover:bg-primary/95"
                 >
                   Create Channel
                 </button>

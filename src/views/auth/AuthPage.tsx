@@ -297,7 +297,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onBypass, onSuccess }) => {
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full py-2.5 bg-primary hover:bg-primary/95 text-white rounded-lg text-xs font-bold shadow-sm transition-all flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-60"
+              className="w-full py-2.5 bg-primary hover:bg-primary/95 text-primary-foreground rounded-lg text-xs font-bold shadow-sm transition-all flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-60"
             >
               {isLoading ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
@@ -388,7 +388,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onBypass, onSuccess }) => {
               </div>
               <button
                 type="submit"
-                className="w-full py-2 bg-primary text-white text-[10px] font-bold rounded-lg hover:bg-primary/95 transition-colors cursor-pointer text-center"
+                className="w-full py-2 bg-primary text-primary-foreground text-[10px] font-bold rounded-lg hover:bg-primary/95 transition-colors cursor-pointer text-center"
               >
                 Save and Connect Database
               </button>

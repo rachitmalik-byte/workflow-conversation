@@ -157,7 +157,7 @@ const playSynthAlarm = (sound: string) => {
 
 export const SettingsView: React.FC = () => {
   const { currentUser, profiles, switchUser, isDeveloper, isAdmin } = useAuth();
-  const { themePreset, setThemePreset, themeMode, setThemeMode, fontFamily, setFontFamily } = useTheme();
+  const { themePreset, setThemePreset, themeMode, setThemeMode, fontFamily, setFontFamily, colorScheme, setColorScheme } = useTheme();
   const [activeTab, setActiveTab] = useState<TabType>('profile');
 
   const hasOnboardAccess = isAdmin;
@@ -566,7 +566,7 @@ export const SettingsView: React.FC = () => {
                     Customize the look, colors, borders, and typography of your workspace. Changes apply immediately and persist.
                   </p>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
                     {/* Theme Preset */}
                     <div>
                       <label className="block text-[10px] font-semibold text-muted-foreground uppercase tracking-wide mb-1.5">
@@ -575,7 +575,7 @@ export const SettingsView: React.FC = () => {
                       <select
                         value={themePreset}
                         onChange={(e) => setThemePreset(e.target.value as any)}
-                        className="w-full text-xs bg-background border border-border text-foreground px-3 py-2.5 rounded-lg focus:outline-none focus:border-primary cursor-pointer font-semibold"
+                        className="w-full text-xs bg-background border border-border text-foreground px-3 py-2.5 rounded-lg focus:outline-none focus:border-primary cursor-pointer font-semibold animate-none"
                       >
                         <option value="corporate">💼 Corporate Professional</option>
                         <option value="glassmorphism">💎 Glassmorphism Elegance</option>
@@ -583,6 +583,30 @@ export const SettingsView: React.FC = () => {
                         <option value="minimalist">✉️ Minimalist Clean</option>
                         <option value="retrofuturistic">👾 Retro-futuristic Glow</option>
                         <option value="scandinavian">🍃 Scandinavian Zen</option>
+                        <option value="bauhaus">📐 Bauhaus Geometric</option>
+                        <option value="cyberpunk">⚡ Cyberpunk Neon</option>
+                        <option value="artdeco">🏛️ Art Deco Luxury</option>
+                        <option value="forestzen">🌲 Forest Sage Tranquility</option>
+                        <option value="midnightroyal">🌌 Midnight Slate Royal</option>
+                      </select>
+                    </div>
+
+                    {/* Accent Color Scheme */}
+                    <div>
+                      <label className="block text-[10px] font-semibold text-muted-foreground uppercase tracking-wide mb-1.5">
+                        Accent Color Scheme
+                      </label>
+                      <select
+                        value={colorScheme}
+                        onChange={(e) => setColorScheme(e.target.value as any)}
+                        className="w-full text-xs bg-background border border-border text-foreground px-3 py-2.5 rounded-lg focus:outline-none focus:border-primary cursor-pointer font-semibold animate-none"
+                      >
+                        <option value="default">🎨 Default Accent</option>
+                        <option value="ocean">🌊 Sapphire Ocean (Blue)</option>
+                        <option value="forest">🌿 Emerald Forest (Green)</option>
+                        <option value="sunset">🌅 Warm Sunset (Orange)</option>
+                        <option value="royal">🔮 Royal Amethyst (Purple)</option>
+                        <option value="crimson">🍷 Crimson Ruby (Crimson)</option>
                       </select>
                     </div>
 
@@ -594,7 +618,7 @@ export const SettingsView: React.FC = () => {
                       <select
                         value={fontFamily}
                         onChange={(e) => setFontFamily(e.target.value as any)}
-                        className="w-full text-xs bg-background border border-border text-foreground px-3 py-2.5 rounded-lg focus:outline-none focus:border-primary cursor-pointer font-semibold"
+                        className="w-full text-xs bg-background border border-border text-foreground px-3 py-2.5 rounded-lg focus:outline-none focus:border-primary cursor-pointer font-semibold animate-none"
                       >
                         <option value="inter">Inter (Clean Sans)</option>
                         <option value="outfit">Outfit (Geometric Sans)</option>

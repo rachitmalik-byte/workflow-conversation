@@ -158,7 +158,7 @@ export const RemindersView: React.FC = () => {
         {!isCreating && (
           <button
             onClick={() => setIsCreating(true)}
-            className="flex items-center justify-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-primary hover:bg-primary/95 shadow-sm rounded-md transition-colors"
+            className="flex items-center justify-center gap-2 px-4 py-2 text-sm font-semibold text-primary-foreground bg-primary hover:bg-primary/95 shadow-sm rounded-md transition-colors"
           >
             <Plus className="h-4 w-4" />
             <span>Create Reminder</span>
@@ -379,7 +379,7 @@ export const RemindersView: React.FC = () => {
               </button>
               <button
                 type="submit"
-                className="px-4 py-2 text-sm font-medium text-white bg-primary hover:bg-primary/95 rounded transition-colors"
+                className="px-4 py-2 text-sm font-medium text-primary-foreground bg-primary hover:bg-primary/95 rounded transition-colors"
               >
                 Set Reminder
               </button>

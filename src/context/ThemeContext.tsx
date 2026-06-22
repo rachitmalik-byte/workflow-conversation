@@ -1,8 +1,21 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 
-export type ThemePreset = 'corporate' | 'glassmorphism' | 'neobrutalist' | 'minimalist' | 'retrofuturistic' | 'scandinavian';
+export type ThemePreset =
+  | 'corporate'
+  | 'glassmorphism'
+  | 'neobrutalist'
+  | 'minimalist'
+  | 'retrofuturistic'
+  | 'scandinavian'
+  | 'bauhaus'
+  | 'cyberpunk'
+  | 'artdeco'
+  | 'forestzen'
+  | 'midnightroyal';
+
 export type ThemeMode = 'light' | 'dark';
 export type FontFamily = 'inter' | 'outfit' | 'space-grotesk' | 'lora' | 'jetbrains-mono';
+export type ColorScheme = 'default' | 'ocean' | 'forest' | 'sunset' | 'royal' | 'crimson';
 
 interface ThemeContextType {
   themePreset: ThemePreset;
@@ -11,6 +24,8 @@ interface ThemeContextType {
   setThemeMode: (mode: ThemeMode) => void;
   fontFamily: FontFamily;
   setFontFamily: (font: FontFamily) => void;
+  colorScheme: ColorScheme;
+  setColorScheme: (scheme: ColorScheme) => void;
   theme: ThemeMode; // Legacy support
   toggleTheme: () => void; // Legacy support
 }
@@ -35,13 +50,18 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     return (localStorage.getItem('relayhq_font_family') as FontFamily) || 'inter';
   });
 
+  const [colorScheme, setColorSchemeState] = useState<ColorScheme>(() => {
+    return (localStorage.getItem('relayhq_color_scheme') as ColorScheme) || 'default';
+  });
+
   useEffect(() => {
     const root = window.document.documentElement;
     
-    // Set preset, mode, and font attributes
+    // Set preset, mode, font, and color scheme attributes
     root.setAttribute('data-theme-preset', themePreset);
     root.setAttribute('data-theme-mode', themeMode);
     root.setAttribute('data-font', fontFamily);
+    root.setAttribute('data-color-scheme', colorScheme);
     
     // Manage dark class for Tailwind
     if (themeMode === 'dark') {
@@ -49,7 +69,7 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     } else {
       root.classList.remove('dark');
     }
-  }, [themePreset, themeMode, fontFamily]);
+  }, [themePreset, themeMode, fontFamily, colorScheme]);
 
   const setThemePreset = (preset: ThemePreset) => {
     setThemePresetState(preset);
@@ -66,6 +86,11 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     localStorage.setItem('relayhq_font_family', font);
   };
 
+  const setColorScheme = (scheme: ColorScheme) => {
+    setColorSchemeState(scheme);
+    localStorage.setItem('relayhq_color_scheme', scheme);
+  };
+
   const toggleTheme = () => {
     setThemeMode(themeMode === 'light' ? 'dark' : 'light');
   };
@@ -79,6 +104,8 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         setThemeMode,
         fontFamily,
         setFontFamily,
+        colorScheme,
+        setColorScheme,
         theme: themeMode,
         toggleTheme,
       }}

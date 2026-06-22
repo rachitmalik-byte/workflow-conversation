@@ -353,7 +353,7 @@ export const DetailPage: React.FC<DetailPageProps> = ({ leadId, onNavigate }) =>
         <p className="text-sm text-muted-foreground">{error || 'This lead does not exist.'}</p>
         <button
           onClick={() => onNavigate('leads')}
-          className="mt-5 px-5 py-2.5 text-xs font-semibold bg-primary text-white rounded-lg hover:bg-primary/95 transition-colors shadow-sm"
+          className="mt-5 px-5 py-2.5 text-xs font-semibold bg-primary text-primary-foreground rounded-lg hover:bg-primary/95 transition-colors shadow-sm"
         >
           Return to Leads
         </button>
@@ -747,10 +747,10 @@ export const DetailPage: React.FC<DetailPageProps> = ({ leadId, onNavigate }) =>
                           <span className="text-[10px] font-semibold text-muted-foreground px-1">
                             {isMe ? 'You' : senderName}
                           </span>
-                          <div className={`px-3 py-2 rounded-2xl text-xs leading-relaxed shadow-sm w-fit max-w-full ${
+                          <div className={`px-3 py-2 text-xs leading-relaxed shadow-sm w-fit max-w-full chat-bubble ${
                             isMe
-                              ? 'bg-primary text-white rounded-tr-sm'
-                              : 'bg-background border border-border/60 text-foreground rounded-tl-sm'
+                              ? 'chat-bubble-outgoing rounded-tr-sm'
+                              : 'chat-bubble-incoming rounded-tl-sm'
                           }`}>
                             <div className="whitespace-pre-wrap break-words space-y-1">
                               {parseMarkdown(update.content, isMe)}
@@ -784,7 +784,7 @@ export const DetailPage: React.FC<DetailPageProps> = ({ leadId, onNavigate }) =>
               <button
                 onClick={handlePostUpdateChat}
                 disabled={!updateText.trim()}
-                className="flex-shrink-0 h-9 w-9 bg-primary hover:bg-primary/90 text-white rounded-xl flex items-center justify-center disabled:opacity-40 transition-all cursor-pointer shadow-sm"
+                className="flex-shrink-0 h-9 w-9 bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl flex items-center justify-center disabled:opacity-40 transition-all cursor-pointer shadow-sm"
               >
                 <Send className="h-3.5 w-3.5" />
               </button>
