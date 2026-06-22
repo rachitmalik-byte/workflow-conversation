@@ -87,10 +87,29 @@ class DBClient {
     if (error) throw error;
 
     const leads = data || [];
-    // Fetch assigned users from link table
-    for (const lead of leads) {
-      const { data: assignees } = await client.from('lead_assigned_users').select('user_id').eq('lead_id', lead.id);
-      lead.assigned_users = assignees?.map((a) => a.user_id) || [];
+    if (leads.length > 0) {
+      const leadIds = leads.map((l) => l.id);
+      const { data: allAssignees, error: assigneesError } = await client
+        .from('lead_assigned_users')
+        .select('lead_id, user_id')
+        .in('lead_id', leadIds);
+
+      if (!assigneesError && allAssignees) {
+        const assigneesMap: Record<string, string[]> = {};
+        for (const a of allAssignees) {
+          if (!assigneesMap[a.lead_id]) {
+            assigneesMap[a.lead_id] = [];
+          }
+          assigneesMap[a.lead_id].push(a.user_id);
+        }
+        for (const lead of leads) {
+          lead.assigned_users = assigneesMap[lead.id] || [];
+        }
+      } else {
+        for (const lead of leads) {
+          lead.assigned_users = [];
+        }
+      }
     }
     return leads;
   }
@@ -376,9 +395,29 @@ class DBClient {
       }
     }
 
-    for (const c of channels) {
-      const { data: members } = await client.from('channel_members').select('user_id').eq('channel_id', c.id);
-      c.member_ids = members?.map((m) => m.user_id) || [];
+    if (channels.length > 0) {
+      const channelIds = channels.map((c) => c.id);
+      const { data: allMembers, error: membersError } = await client
+        .from('channel_members')
+        .select('channel_id, user_id')
+        .in('channel_id', channelIds);
+
+      if (!membersError && allMembers) {
+        const memberMap: Record<string, string[]> = {};
+        for (const m of allMembers) {
+          if (!memberMap[m.channel_id]) {
+            memberMap[m.channel_id] = [];
+          }
+          memberMap[m.channel_id].push(m.user_id);
+        }
+        for (const c of channels) {
+          c.member_ids = memberMap[c.id] || [];
+        }
+      } else {
+        for (const c of channels) {
+          c.member_ids = [];
+        }
+      }
     }
     return channels;
   }

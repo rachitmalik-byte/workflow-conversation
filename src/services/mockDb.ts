@@ -20,7 +20,7 @@ export const MOCK_PROFILES: Profile[] = [
     email: 'alex.r@relayhq.com',
     role: 'growth_specialist',
     status: 'active',
-    designation: 'Senior Outbound Specialist',
+    designation: 'Senior Workflow Specialist',
     presence: 'online',
     created_at: new Date(Date.now() - 25 * 24 * 60 * 60 * 1000).toISOString(),
     updated_at: new Date(Date.now() - 25 * 24 * 60 * 60 * 1000).toISOString(),
@@ -31,7 +31,7 @@ export const MOCK_PROFILES: Profile[] = [
     email: 'elena.r@relayhq.com',
     role: 'growth_specialist',
     status: 'active',
-    designation: 'Lead Generator',
+    designation: 'Workflow Coordinator',
     presence: 'idle',
     created_at: new Date(Date.now() - 20 * 24 * 60 * 60 * 1000).toISOString(),
     updated_at: new Date(Date.now() - 20 * 24 * 60 * 60 * 1000).toISOString(),
@@ -42,7 +42,7 @@ export const MOCK_PROFILES: Profile[] = [
     email: 'marcus.c@relayhq.com',
     role: 'growth_specialist',
     status: 'active',
-    designation: 'SDR Campaign Lead',
+    designation: 'Workflow Integration Lead',
     presence: 'busy',
     created_at: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000).toISOString(),
     updated_at: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000).toISOString(),
@@ -53,7 +53,7 @@ export const MOCK_PROFILES: Profile[] = [
     email: 'jane.d@relayhq.com',
     role: 'growth_specialist',
     status: 'inactive',
-    designation: 'Growth Specialist',
+    designation: 'Workflow Specialist',
     presence: 'offline',
     created_at: new Date(Date.now() - 60 * 24 * 60 * 60 * 1000).toISOString(),
     updated_at: new Date(Date.now() - 60 * 24 * 60 * 60 * 1000).toISOString(),
@@ -613,7 +613,7 @@ class MemoryDB {
     this.leads.unshift(newLead);
     
     // Auto-create log/update
-    this.createLeadUpdate(newLead.id, userId, 'Lead was created.');
+    this.createLeadUpdate(newLead.id, userId, 'Project was created.');
 
     // If Head or other users are assigned, send them notification
     const assigned = newLead.assigned_users || [];
@@ -622,8 +622,8 @@ class MemoryDB {
         this.createNotification(
           uid,
           'assignment_alert',
-          'Assigned to Lead',
-          `You have been assigned to lead: ${newLead.company_name} (${newLead.prospect_name}).`,
+          'Assigned to Project',
+          `You have been assigned to project: ${newLead.company_name} (${newLead.prospect_name}).`,
           `/leads/${newLead.id}`
         );
       }
@@ -660,7 +660,7 @@ class MemoryDB {
     if (leadData.status && leadData.status !== lead.status) {
       this.createLeadUpdate(id, userId, `Status changed from "${lead.status}" to "${leadData.status}".`);
     } else {
-      this.createLeadUpdate(id, userId, 'Lead details updated.');
+      this.createLeadUpdate(id, userId, 'Project details updated.');
     }
 
     // Notify new assignees
@@ -671,8 +671,8 @@ class MemoryDB {
           this.createNotification(
             uid,
             'assignment_alert',
-            'Assigned to Lead',
-            `You have been assigned to lead: ${updatedLead.company_name}.`,
+            'Assigned to Project',
+            `You have been assigned to project: ${updatedLead.company_name}.`,
             `/leads/${updatedLead.id}`
           );
         }

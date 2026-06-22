@@ -157,13 +157,13 @@ export const LeadsView: React.FC<LeadsViewProps> = ({ onNavigate }) => {
 
   // Kanban view statuses
   const kanbanStatuses: { value: LeadStatus; label: string; color: string }[] = [
-    { value: 'new', label: 'New', color: 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20' },
-    { value: 'contacted', label: 'Contacted', color: 'bg-yellow-500/10 text-yellow-600 dark:text-yellow-400 border-yellow-500/20' },
-    { value: 'qualified', label: 'Qualified', color: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20' },
-    { value: 'proposal', label: 'Proposal', color: 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20' },
-    { value: 'negotiation', label: 'Negotiation', color: 'bg-pink-500/10 text-pink-600 dark:text-pink-400 border-pink-500/20' },
-    { value: 'closed_won', label: 'Won', color: 'bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/20' },
-    { value: 'closed_lost', label: 'Lost', color: 'bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20' },
+    { value: 'new', label: 'Backlog', color: 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20' },
+    { value: 'contacted', label: 'In Progress', color: 'bg-yellow-500/10 text-yellow-600 dark:text-yellow-400 border-yellow-500/20' },
+    { value: 'qualified', label: 'Under Review', color: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20' },
+    { value: 'proposal', label: 'Proposal Phase', color: 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20' },
+    { value: 'negotiation', label: 'In Discussion', color: 'bg-pink-500/10 text-pink-600 dark:text-pink-400 border-pink-500/20' },
+    { value: 'closed_won', label: 'Completed', color: 'bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/20' },
+    { value: 'closed_lost', label: 'Archived / Cancelled', color: 'bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20' },
   ];
 
   // Move Lead Status Handler (Simulating Kanban board updates)
@@ -239,7 +239,7 @@ export const LeadsView: React.FC<LeadsViewProps> = ({ onNavigate }) => {
                 <span>{employeeName}</span>
               </span>
               <span className="text-[10px] font-semibold text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
-                {groupLeads.length} leads
+                {groupLeads.length} projects
               </span>
             </div>
             {renderTableBody(groupLeads)}
@@ -253,7 +253,7 @@ export const LeadsView: React.FC<LeadsViewProps> = ({ onNavigate }) => {
     if (leadsList.length === 0) {
       return (
         <div className="p-8 text-center text-xs text-muted-foreground">
-          No leads under this criteria.
+          No projects under this criteria.
         </div>
       );
     }
@@ -344,17 +344,17 @@ export const LeadsView: React.FC<LeadsViewProps> = ({ onNavigate }) => {
                     <button
                       onClick={async (e) => {
                         e.stopPropagation();
-                        if (window.confirm(`Delete lead: ${l.company_name}? This will remove all updates and attachments.`)) {
+                        if (window.confirm(`Delete project: ${l.company_name}? This will remove all updates and attachments.`)) {
                           try {
                             await dbClient.deleteLead(l.id);
                             fetchLeads();
                           } catch (err: any) {
-                             alert(err.message || 'Failed to delete lead');
+                             alert(err.message || 'Failed to delete project');
                           }
                         }
                       }}
                       className="p-1 hover:bg-danger/10 text-muted-foreground hover:text-danger rounded transition-colors inline-flex items-center gap-1.5 cursor-pointer"
-                      title="Delete lead"
+                      title="Delete project"
                     >
                       <Trash2 className="h-4 w-4" />
                     </button>
@@ -373,9 +373,9 @@ export const LeadsView: React.FC<LeadsViewProps> = ({ onNavigate }) => {
       {/* Top Banner Toolbar */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border pb-4">
         <div>
-          <h2 className="text-xl font-extrabold text-foreground sm:text-2xl tracking-tight">Leads & Outbound Targets</h2>
+          <h2 className="text-xl font-extrabold text-foreground sm:text-2xl tracking-tight">Workflow Projects Hub</h2>
           <p className="text-xs text-muted-foreground mt-0.5">
-            {currentUser?.role === 'head' ? 'Head Analytics: Monitor and assign prospects across growth specialists.' : 'Specialist Portfolio: Work and edit your qualified lead campaigns.'}
+            {currentUser?.role === 'head' ? 'Head Director: Monitor and coordinate active projects across your team.' : 'Teammate Portfolio: Track and execute your assigned project workflows.'}
           </p>
         </div>
 
@@ -384,7 +384,7 @@ export const LeadsView: React.FC<LeadsViewProps> = ({ onNavigate }) => {
           className="flex items-center justify-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-primary hover:bg-primary/95 shadow-sm rounded-md transition-colors"
         >
           <Plus className="h-4 w-4" />
-          <span>Add Outbound Lead</span>
+          <span>Create New Project</span>
         </button>
       </div>
 
@@ -431,7 +431,7 @@ export const LeadsView: React.FC<LeadsViewProps> = ({ onNavigate }) => {
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search leads, tags..."
+              placeholder="Search projects, tags..."
               className="w-full pl-9 pr-3 py-2 border border-border bg-card text-foreground text-xs sm:text-sm rounded focus:outline-none focus:border-primary"
             />
           </div>
@@ -446,9 +446,9 @@ export const LeadsView: React.FC<LeadsViewProps> = ({ onNavigate }) => {
                   value={employeeFilter}
                   onChange={(e) => setEmployeeFilter(e.target.value)}
                   className="bg-transparent text-foreground focus:outline-none cursor-pointer"
-                  title="Filter leads by employee"
+                  title="Filter projects by teammate"
                 >
-                  <option value="all">All Employees</option>
+                  <option value="all">All Teammates</option>
                   {profiles
                     .filter((p) => p.role === 'growth_specialist' && p.status === 'active')
                     .map((p) => (
@@ -467,10 +467,10 @@ export const LeadsView: React.FC<LeadsViewProps> = ({ onNavigate }) => {
                     ? 'bg-primary/10 border-primary text-primary'
                     : 'bg-card border-border text-muted-foreground hover:text-foreground'
                 }`}
-                title="Toggle group leads by employee"
+                title="Toggle group projects by teammate"
               >
                 <Users className="h-3.5 w-3.5" />
-                <span>Group by Employee</span>
+                <span>Group by Teammate</span>
               </button>
 
               <button
@@ -480,9 +480,9 @@ export const LeadsView: React.FC<LeadsViewProps> = ({ onNavigate }) => {
                     ? 'bg-warning/10 border-warning text-warning'
                     : 'bg-card border-border text-muted-foreground hover:text-foreground'
                 }`}
-                title="Toggle viewing hidden leads"
+                title="Toggle viewing hidden projects"
               >
-                <span>{showHidden ? 'Show Active Leads' : 'Show Hidden Leads'}</span>
+                <span>{showHidden ? 'Show Active Projects' : 'Show Hidden Projects'}</span>
               </button>
             </>
           )}
@@ -507,15 +507,15 @@ export const LeadsView: React.FC<LeadsViewProps> = ({ onNavigate }) => {
       {leads.length === 0 ? (
         <div className="flex flex-col items-center justify-center p-12 border border-border border-dashed bg-card rounded-lg text-center">
           <Briefcase className="h-12 w-12 text-muted-foreground/30 mb-3" />
-          <h3 className="text-base font-bold text-foreground">No leads captured yet</h3>
+          <h3 className="text-base font-bold text-foreground">No projects created yet</h3>
           <p className="text-xs text-muted-foreground mt-1 max-w-sm">
-            Kick off outbound sales campaigns by creating your first business lead targeting sheet.
+            Start collaborating by creating your first internal workflow or project card.
           </p>
           <button
             onClick={() => onNavigate('leads/new')}
             className="mt-4 px-4 py-2 text-xs font-semibold text-white bg-primary rounded hover:bg-primary/95 transition-colors"
           >
-            Create Outbound Lead
+            Create New Project
           </button>
         </div>
       ) : activeTab === 'table' ? (

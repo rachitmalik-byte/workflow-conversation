@@ -71,13 +71,13 @@ export const Header: React.FC<HeaderProps> = ({ currentView, onNavigate, onToggl
   // Parse view title
   const getViewTitle = () => {
     if (currentView === 'dashboard') return 'Dashboard';
-    if (currentView === 'leads') return 'Leads';
-    if (currentView === 'leads/new') return 'Create Lead';
-    if (currentView.startsWith('leads/') && currentView.endsWith('/edit')) return 'Edit Lead';
-    if (currentView.startsWith('leads/')) return 'Lead Details';
+    if (currentView === 'leads') return 'Projects';
+    if (currentView === 'leads/new') return 'Create Project';
+    if (currentView.startsWith('leads/') && currentView.endsWith('/edit')) return 'Edit Project';
+    if (currentView.startsWith('leads/')) return 'Project Details';
     if (currentView === 'tasks') return 'Task Center';
     if (currentView === 'reminders') return 'Reminders';
-    if (currentView === 'notes') return 'Playbooks Scratchpad';
+    if (currentView === 'notes') return 'Workflow Scratchpad';
     if (currentView.startsWith('messaging')) return 'Messaging';
     if (currentView === 'settings') return 'Settings';
     return 'RelayHQ';

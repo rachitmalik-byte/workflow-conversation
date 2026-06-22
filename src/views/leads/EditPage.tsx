@@ -293,7 +293,7 @@ export const EditPage: React.FC<EditPageProps> = ({ leadId, onNavigate }) => {
     return (
       <div className="flex h-64 w-full flex-col items-center justify-center gap-2">
         <Loader2 className="h-8 w-8 text-primary animate-spin" />
-        <span className="text-sm text-muted-foreground">Loading lead details...</span>
+        <span className="text-xs text-muted-foreground">Loading project details...</span>
       </div>
     );
   }
@@ -308,7 +308,7 @@ export const EditPage: React.FC<EditPageProps> = ({ leadId, onNavigate }) => {
           onClick={() => onNavigate('leads')}
           className="mt-4 px-4 py-2 text-xs font-semibold bg-primary text-white rounded hover:bg-primary/95 transition-colors"
         >
-          Return to Leads
+          Return to Projects
         </button>
       </div>
     );
@@ -321,15 +321,15 @@ export const EditPage: React.FC<EditPageProps> = ({ leadId, onNavigate }) => {
         <button
           onClick={() => onNavigate(`leads/${leadId}`)}
           className="p-1.5 hover:bg-muted text-muted-foreground hover:text-foreground rounded-md transition-colors"
-          title="Back to lead detail"
+          title="Back to project details"
         >
           <ArrowLeft className="h-5 w-5" />
         </button>
-        <span className="text-xs text-muted-foreground">Back to Lead Details</span>
+        <span className="text-xs text-muted-foreground">Back to Project Details</span>
       </div>
 
       <div className="border border-border rounded-lg bg-card p-6 shadow-sm">
-        <h2 className="text-xl font-bold text-foreground mb-6">Edit Lead Info</h2>
+        <h2 className="text-xl font-bold text-foreground mb-6">Edit Project Info</h2>
 
         {error && (
           <div className="mb-4 flex items-center gap-2 bg-danger/10 border border-danger/20 p-3 rounded text-danger text-sm">
@@ -674,7 +674,7 @@ export const EditPage: React.FC<EditPageProps> = ({ leadId, onNavigate }) => {
               Team Assignment & Visibility
             </h3>
             <p className="text-[10px] text-muted-foreground mb-4">
-              Heads can assign any teammate. The lead creator is always assigned.
+              Heads can assign any teammate. The project creator is always assigned.
             </p>
             {/* Teammate Search Input */}
             <div className="mb-3 max-w-xs">

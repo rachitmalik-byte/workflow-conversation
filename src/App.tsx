@@ -85,7 +85,7 @@ const MainAppContent: React.FC = () => {
           const gain = audioCtx.createGain();
           osc.type = 'sine';
           osc.frequency.setValueAtTime(freq, time);
-          gain.gain.setValueAtTime(0.08, time);
+          gain.gain.setValueAtTime(0.25, time);
           gain.gain.exponentialRampToValueAtTime(0.001, time + duration);
           osc.connect(gain);
           gain.connect(audioCtx.destination);
@@ -100,7 +100,7 @@ const MainAppContent: React.FC = () => {
         osc.type = 'sine';
         osc.frequency.setValueAtTime(1200, now);
         osc.frequency.exponentialRampToValueAtTime(600, now + 0.4);
-        gain.gain.setValueAtTime(0.08, now);
+        gain.gain.setValueAtTime(0.3, now);
         gain.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
         osc.connect(gain);
         gain.connect(audioCtx.destination);
@@ -111,7 +111,7 @@ const MainAppContent: React.FC = () => {
         const gain = audioCtx.createGain();
         osc.type = 'square';
         osc.frequency.setValueAtTime(1000, now);
-        gain.gain.setValueAtTime(0.04, now);
+        gain.gain.setValueAtTime(0.2, now);
         gain.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
         osc.connect(gain);
         gain.connect(audioCtx.destination);
@@ -125,7 +125,7 @@ const MainAppContent: React.FC = () => {
         osc.frequency.setValueAtTime(220, now);
         osc2.type = 'sine';
         osc2.frequency.setValueAtTime(225, now);
-        gain.gain.setValueAtTime(0.12, now);
+        gain.gain.setValueAtTime(0.35, now);
         gain.gain.exponentialRampToValueAtTime(0.001, now + 0.8);
         osc.connect(gain);
         osc2.connect(gain);
@@ -154,7 +154,7 @@ const MainAppContent: React.FC = () => {
           const gain = audioCtx.createGain();
           osc.type = 'sawtooth';
           osc.frequency.setValueAtTime(freq, time);
-          gain.gain.setValueAtTime(0.1, time);
+          gain.gain.setValueAtTime(0.35, time);
           gain.gain.exponentialRampToValueAtTime(0.001, time + duration);
           osc.connect(gain);
           gain.connect(audioCtx.destination);
@@ -171,7 +171,7 @@ const MainAppContent: React.FC = () => {
         osc.frequency.setValueAtTime(600, now);
         osc.frequency.linearRampToValueAtTime(900, now + 0.25);
         osc.frequency.linearRampToValueAtTime(600, now + 0.5);
-        gain.gain.setValueAtTime(0.12, now);
+        gain.gain.setValueAtTime(0.4, now);
         gain.gain.exponentialRampToValueAtTime(0.001, now + 0.5);
         osc.connect(gain);
         gain.connect(audioCtx.destination);
@@ -186,7 +186,7 @@ const MainAppContent: React.FC = () => {
           osc.frequency.setValueAtTime(1500, time);
           osc2.type = 'sine';
           osc2.frequency.setValueAtTime(2200, time);
-          gain.gain.setValueAtTime(0.06, time);
+          gain.gain.setValueAtTime(0.3, time);
           gain.gain.exponentialRampToValueAtTime(0.001, time + 0.1);
           osc.connect(gain);
           osc2.connect(gain);
@@ -205,7 +205,7 @@ const MainAppContent: React.FC = () => {
           const gain = audioCtx.createGain();
           osc.type = 'square';
           osc.frequency.setValueAtTime(800, time);
-          gain.gain.setValueAtTime(0.05, time);
+          gain.gain.setValueAtTime(0.25, time);
           gain.gain.exponentialRampToValueAtTime(0.001, time + 0.08);
           osc.connect(gain);
           gain.connect(audioCtx.destination);
@@ -303,8 +303,19 @@ const MainAppContent: React.FC = () => {
     const unlock = () => {
       try {
         const ctx = getAudioCtx();
-        if (ctx && ctx.state === 'suspended') {
-          ctx.resume();
+        if (ctx) {
+          ctx.resume().then(() => {
+            // Play a very brief, silent oscillator chime to force browser audio authorization
+            const osc = ctx.createOscillator();
+            const gainNode = ctx.createGain();
+            osc.connect(gainNode);
+            gainNode.connect(ctx.destination);
+            gainNode.gain.setValueAtTime(0.0001, ctx.currentTime);
+            osc.start(0);
+            osc.stop(ctx.currentTime + 0.05);
+          }).catch((err) => {
+            console.warn('AudioContext resume failed:', err);
+          });
         }
       } catch (e) {
         console.warn(e);

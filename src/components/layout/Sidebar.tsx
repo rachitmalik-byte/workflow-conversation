@@ -92,7 +92,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   const navItems = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-    { id: 'leads', label: 'Leads', icon: Briefcase, badge: unreadCounts.leads > 0 ? unreadCounts.leads : undefined, isDot: true },
+    { id: 'leads', label: 'Projects', icon: Briefcase, badge: unreadCounts.leads > 0 ? unreadCounts.leads : undefined, isDot: true },
     { id: 'tasks', label: 'Tasks', icon: CheckSquare, badge: unreadCounts.tasks > 0 ? unreadCounts.tasks : undefined, isDot: true },
     { id: 'reminders', label: 'Reminders', icon: Calendar, badge: unreadCounts.reminders > 0 ? unreadCounts.reminders : undefined, isDot: true },
     { id: 'notes', label: 'Scratchpad', icon: FileText },
@@ -150,9 +150,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           style={{ paddingLeft: isExpanded ? '16px' : '0', paddingRight: isExpanded ? '12px' : '0', justifyContent: isExpanded ? 'space-between' : 'center', transition: 'padding 220ms cubic-bezier(0.4, 0, 0.2, 1)' }}
         >
           <div className="flex items-center gap-2.5 min-w-0">
-            <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-primary text-white font-extrabold text-base shadow-sm">
-              R
-            </div>
+            <img src="/logo.png" className="h-8 w-8 flex-shrink-0 object-contain rounded-lg shadow-sm" alt="RelayHQ" />
             <span
               className="text-sm font-extrabold text-foreground tracking-tight whitespace-nowrap overflow-hidden"
               style={{ opacity: isExpanded ? 1 : 0, maxWidth: isExpanded ? '120px' : '0', transition: 'opacity 180ms ease, max-width 220ms cubic-bezier(0.4,0,0.2,1)' }}
@@ -211,7 +209,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
                 {/* Label */}
                 <span
-                  className="ml-3 whitespace-nowrap font-medium overflow-hidden"
+                  className={`${isExpanded ? 'ml-3' : 'ml-0'} whitespace-nowrap font-medium overflow-hidden`}
                   style={{ opacity: isExpanded ? 1 : 0, maxWidth: isExpanded ? '160px' : '0', transition: 'opacity 160ms ease, max-width 220ms cubic-bezier(0.4,0,0.2,1)' }}
                 >
                   {item.label}
@@ -271,24 +269,26 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </nav>
 
         {/* Bulk Mail Chip */}
-        <div className="px-3 py-2 flex-shrink-0">
-          <a
-            href="https://mainsitesend.vercel.app/followups"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center gap-2 text-primary bg-primary/10 border border-primary/20 rounded-lg hover:bg-primary/15 transition-all duration-200"
-            style={{ justifyContent: isExpanded ? 'flex-start' : 'center', padding: isExpanded ? '8px 12px' : '8px' }}
-            title="Bulk Email & Follow-ups"
-          >
-            <Mail className="h-3.5 w-3.5 flex-shrink-0" />
-            {isExpanded && (
-              <span className="truncate flex items-center gap-1 text-[11px] font-semibold">
-                <span>Bulk Email Tool</span>
-                <ExternalLink className="h-3 w-3 opacity-60" />
-              </span>
-            )}
-          </a>
-        </div>
+        {currentUser?.role === 'growth_specialist' && (
+          <div className="px-3 py-2 flex-shrink-0">
+            <a
+              href="https://mainsitesend.vercel.app/followups"
+              target="_blank"
+              rel="noopener noreferrer"
+              className={`flex items-center text-primary bg-primary/10 border border-primary/20 rounded-lg hover:bg-primary/15 transition-all duration-200 ${isExpanded ? 'gap-2' : ''}`}
+              style={{ justifyContent: isExpanded ? 'flex-start' : 'center', padding: isExpanded ? '8px 12px' : '8px' }}
+              title="Bulk Email & Follow-ups"
+            >
+              <Mail className="h-3.5 w-3.5 flex-shrink-0" />
+              {isExpanded && (
+                <span className="truncate flex items-center gap-1 text-[11px] font-semibold">
+                  <span>Bulk Email Tool</span>
+                  <ExternalLink className="h-3 w-3 opacity-60" />
+                </span>
+              )}
+            </a>
+          </div>
+        )}
 
         {/* ── Profile Footer ── */}
         <div
@@ -319,7 +319,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           )}
 
           {/* Avatar + info row */}
-          <div className="flex items-center gap-2.5 min-w-0" style={{ justifyContent: isExpanded ? 'flex-start' : 'center' }}>
+          <div className="flex items-center min-w-0" style={{ justifyContent: isExpanded ? 'flex-start' : 'center', gap: isExpanded ? '10px' : '0' }}>
             {/* Avatar */}
             <div
               className="flex-shrink-0 h-8 w-8 rounded-full bg-primary/15 text-primary font-bold text-xs flex items-center justify-center cursor-default select-none ring-2 ring-primary/20"

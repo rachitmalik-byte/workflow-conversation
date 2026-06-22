@@ -256,11 +256,11 @@ export const CreatePage: React.FC<CreatePageProps> = ({ onNavigate }) => {
         >
           <ArrowLeft className="h-5 w-5" />
         </button>
-        <span className="text-xs text-muted-foreground">Back to Leads List</span>
+        <span className="text-xs text-muted-foreground">Back to Projects List</span>
       </div>
 
       <div className="border border-border rounded-lg bg-card p-6 shadow-sm">
-        <h2 className="text-xl font-bold text-foreground mb-6">Create Outbound Lead</h2>
+        <h2 className="text-xl font-bold text-foreground mb-6">Create New Project</h2>
 
         {error && (
           <div className="mb-4 flex items-center gap-2 bg-danger/10 border border-danger/20 p-3 rounded text-danger text-sm">
@@ -612,7 +612,7 @@ export const CreatePage: React.FC<CreatePageProps> = ({ onNavigate }) => {
               Team Assignment & Visibility
             </h3>
             <p className="text-[10px] text-muted-foreground mb-4">
-              As a Growth Specialist, you are automatically assigned. Assigning other team members allows them to view/work on this lead (subject to privacy limits).
+              You are automatically assigned as the creator of this project. Assigning other team members allows them to view/work on this project.
             </p>
             {/* Teammate Assignment Search */}
             <div className="mb-3 max-w-xs">
@@ -665,7 +665,7 @@ export const CreatePage: React.FC<CreatePageProps> = ({ onNavigate }) => {
               disabled={isSaving}
               className="px-4 py-2 text-sm font-medium text-white bg-primary hover:bg-primary/95 disabled:opacity-50 rounded transition-colors"
             >
-              {isSaving ? 'Creating...' : 'Create Lead'}
+              {isSaving ? 'Creating...' : 'Create Project'}
             </button>
           </div>
         </form>

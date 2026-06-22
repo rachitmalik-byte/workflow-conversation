@@ -336,9 +336,9 @@ export const DetailPage: React.FC<DetailPageProps> = ({ leadId, onNavigate }) =>
 
   const handleDelete = async () => {
     if (!lead) return;
-    if (!window.confirm(`Delete lead: ${lead.company_name}? This cannot be undone.`)) return;
+    if (!window.confirm(`Delete project: ${lead.company_name}? This cannot be undone.`)) return;
     try { await dbClient.deleteLead(lead.id); onNavigate('leads'); }
-    catch (err: any) { alert(err.message || 'Failed to delete lead.'); }
+    catch (err: any) { alert(err.message || 'Failed to delete project.'); }
   };
 
   const getProfileName = (uid: string) => profiles.find((p) => p.id === uid)?.full_name || 'Unknown';
@@ -349,7 +349,7 @@ export const DetailPage: React.FC<DetailPageProps> = ({ leadId, onNavigate }) =>
     return (
       <div className="flex h-64 w-full flex-col items-center justify-center gap-3">
         <Loader2 className="h-8 w-8 text-primary animate-spin" />
-        <span className="text-sm text-muted-foreground font-medium">Loading lead details...</span>
+        <span className="text-sm text-muted-foreground font-medium">Loading project details...</span>
       </div>
     );
   }
@@ -361,12 +361,12 @@ export const DetailPage: React.FC<DetailPageProps> = ({ leadId, onNavigate }) =>
           <AlertTriangle className="h-8 w-8 text-warning" />
         </div>
         <h3 className="text-base font-bold text-foreground mb-2">Access Restricted</h3>
-        <p className="text-sm text-muted-foreground">{error || 'This lead does not exist.'}</p>
+        <p className="text-sm text-muted-foreground">{error || 'This project does not exist.'}</p>
         <button
           onClick={() => onNavigate('leads')}
           className="mt-5 px-5 py-2.5 text-xs font-semibold bg-primary text-primary-foreground rounded-lg hover:bg-primary/95 transition-colors shadow-sm"
         >
-          Return to Leads
+          Return to Projects
         </button>
       </div>
     );
@@ -559,7 +559,7 @@ export const DetailPage: React.FC<DetailPageProps> = ({ leadId, onNavigate }) =>
 
           {/* Rich text fields */}
           <RichTextField
-            label="📝 Outbound Playbook Notes"
+            label="📝 Project Strategy & Playbook Notes"
             value={notesValue}
             onChange={setNotesValue}
             onSave={() => handleSaveField('notes', notesValue)}
@@ -575,7 +575,7 @@ export const DetailPage: React.FC<DetailPageProps> = ({ leadId, onNavigate }) =>
           />
 
           <RichTextField
-            label="📥 Reply Received"
+            label="📥 Workflow Feedback & Response"
             value={replyValue}
             onChange={setReplyValue}
             onSave={() => handleSaveField('reply_received', replyValue)}
@@ -592,7 +592,7 @@ export const DetailPage: React.FC<DetailPageProps> = ({ leadId, onNavigate }) =>
           />
 
           <RichTextField
-            label="📤 Proposal Sent"
+            label="📤 Project Proposal / Details"
             value={proposalValue}
             onChange={setProposalValue}
             onSave={() => handleSaveField('proposal_sent', proposalValue)}
@@ -612,7 +612,7 @@ export const DetailPage: React.FC<DetailPageProps> = ({ leadId, onNavigate }) =>
           <div className="bg-card border border-border rounded-xl shadow-sm overflow-hidden">
             <div className="bg-muted/30 border-b border-border px-4 py-2.5 flex items-center gap-2">
               <Paperclip className="h-3.5 w-3.5 text-muted-foreground" />
-              <span className="text-xs font-bold text-foreground">Outbound Assets</span>
+              <span className="text-xs font-bold text-foreground">Project Workflow Assets</span>
             </div>
             <div className="p-4 space-y-3">
               <form onSubmit={handleAttachFile} className="flex gap-2">
@@ -687,10 +687,10 @@ export const DetailPage: React.FC<DetailPageProps> = ({ leadId, onNavigate }) =>
           <div className="flex-shrink-0 bg-card border-b border-border px-4 py-3">
             <h3 className="text-xs font-bold text-foreground flex items-center gap-2">
               <span className="h-2 w-2 rounded-full bg-success animate-pulse flex-shrink-0" />
-              Lead Activity Chat
+              Project Activity Chat
             </h3>
             <p className="text-[10px] text-muted-foreground mt-0.5">
-              Team updates · {updates.filter(u => !u.content.startsWith('Status') && !u.content.includes('created') && !u.content.startsWith('Attached') && !u.content.startsWith('Lead details')).length} messages
+              Team updates · {updates.filter(u => !u.content.startsWith('Status') && !u.content.includes('created') && !u.content.startsWith('Attached') && !u.content.startsWith('Project details')).length} messages
             </p>
           </div>
 
@@ -714,9 +714,9 @@ export const DetailPage: React.FC<DetailPageProps> = ({ leadId, onNavigate }) =>
               return reversedUpdates.map((update, index) => {
                 const isSystem =
                   update.content.startsWith('Status changed') ||
-                  update.content.includes('Lead was created') ||
+                  update.content.includes('Project was created') ||
                   update.content.startsWith('Attached file') ||
-                  update.content.startsWith('Lead details updated');
+                  update.content.startsWith('Project details updated');
 
                 const isMe = String(update.user_id) === String(currentUser?.id);
                 const senderName = getProfileName(update.user_id);

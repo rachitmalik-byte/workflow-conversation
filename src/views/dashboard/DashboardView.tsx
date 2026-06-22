@@ -37,7 +37,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
     const savedLayout = localStorage.getItem(`relayhq_dash_layout_${currentUser.id}`);
     const defaultLayout = currentUser.role === 'head'
       ? ['head-metrics', 'lifecycle', 'teammates', 'upcoming-reminders', 'recent-activity', 'pipeline-funnel', 'calendar-mini', 'quote-of-the-day', 'team-presence']
-      : ['specialist-metrics', 'quick-add', 'lead-pipeline', 'tasks', 'upcoming-reminders', 'pipeline-funnel', 'calendar-mini', 'quote-of-the-day', 'team-presence'];
+      : ['specialist-metrics', 'upcoming-reminders', 'lead-pipeline', 'quick-add', 'calendar-mini', 'tasks', 'team-presence', 'pipeline-funnel', 'quote-of-the-day'];
     setWidgetList(savedLayout ? JSON.parse(savedLayout) : defaultLayout);
 
     // Load visibility
@@ -56,14 +56,14 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
         }
       : {
           'specialist-metrics': true,
-          'quick-add': true,
-          'lead-pipeline': true,
-          'tasks': true,
           'upcoming-reminders': true,
+          'lead-pipeline': true,
+          'quick-add': true,
+          'calendar-mini': true,
+          'tasks': true,
+          'team-presence': true,
           'pipeline-funnel': false,
-          'calendar-mini': false,
           'quote-of-the-day': false,
-          'team-presence': false,
         };
     setVisibleWidgets(savedVisibility ? JSON.parse(savedVisibility) : defaultVisibility);
 
@@ -74,10 +74,10 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
       'specialist-metrics': 'full',
       'lifecycle': '2/3',
       'teammates': '1/3',
-      'upcoming-reminders': currentUser.role === 'head' ? '1/2' : '1/3',
+      'upcoming-reminders': '1/3',
       'recent-activity': '1/2',
-      'quick-add': '2/3',
-      'lead-pipeline': '2/3',
+      'quick-add': '1/3',
+      'lead-pipeline': '1/3',
       'tasks': '1/3',
       'pipeline-funnel': '2/3',
       'calendar-mini': '1/3',
@@ -1087,47 +1087,51 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
         </div>
 
         {/* Configure widgets button */}
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => setIsConfiguring(!isConfiguring)}
-            className="flex items-center justify-center gap-1.5 px-3 py-1.5 border border-border hover:bg-muted text-muted-foreground hover:text-foreground rounded-lg text-xs font-semibold transition-colors cursor-pointer"
-          >
-            <Layout className="h-3.5 w-3.5 text-primary" />
-            <span>Customize Widgets</span>
-          </button>
-          <button
-            onClick={resetDashboardLayout}
-            className="flex items-center justify-center p-1.5 border border-border hover:bg-muted text-muted-foreground hover:text-foreground rounded-lg transition-colors cursor-pointer"
-            title="Reset to default dashboard layout"
-          >
-            <RefreshCw className="h-3.5 w-3.5" />
-          </button>
-        </div>
+        {currentUser?.role === 'growth_specialist' && (
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setIsConfiguring(!isConfiguring)}
+              className="flex items-center justify-center gap-1.5 px-3 py-1.5 border border-border hover:bg-muted text-muted-foreground hover:text-foreground rounded-lg text-xs font-semibold transition-colors cursor-pointer"
+            >
+              <Layout className="h-3.5 w-3.5 text-primary" />
+              <span>Customize Widgets</span>
+            </button>
+            <button
+              onClick={resetDashboardLayout}
+              className="flex items-center justify-center p-1.5 border border-border hover:bg-muted text-muted-foreground hover:text-foreground rounded-lg transition-colors cursor-pointer"
+              title="Reset to default dashboard layout"
+            >
+              <RefreshCw className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Bulk Mail Campaign CTA */}
-      <div className="border border-border rounded-xl bg-gradient-to-r from-primary/10 to-accent/10 p-4 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <div className="h-9 w-9 bg-primary/20 text-primary rounded-full flex items-center justify-center flex-shrink-0">
-            <Mail className="h-4 w-4" />
+      {currentUser?.role === 'growth_specialist' && (
+        <div className="border border-border rounded-xl bg-gradient-to-r from-primary/10 to-accent/10 p-4 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="h-9 w-9 bg-primary/20 text-primary rounded-full flex items-center justify-center flex-shrink-0">
+              <Mail className="h-4 w-4" />
+            </div>
+            <div>
+              <h4 className="text-xs font-extrabold text-foreground">Need to send bulk mails & follow-ups?</h4>
+              <p className="text-[10px] text-muted-foreground mt-0.5 leading-normal max-w-2xl">
+                Use our companion Bulk Mailing platform to launch cold campaigns, schedule automatic replies, and track open analytics.
+              </p>
+            </div>
           </div>
-          <div>
-            <h4 className="text-xs font-extrabold text-foreground">Need to send bulk mails & follow-ups?</h4>
-            <p className="text-[10px] text-muted-foreground mt-0.5 leading-normal max-w-2xl">
-              Use our companion Bulk Mailing platform to launch cold campaigns, schedule automatic replies, and track open analytics.
-            </p>
-          </div>
+          <a
+            href="https://mainsitesend.vercel.app/followups"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-primary hover:bg-primary/95 text-white rounded text-xs font-semibold shadow-sm transition-all duration-200 cursor-pointer flex-shrink-0"
+          >
+            <span>Launch Mailer</span>
+            <ExternalLink className="h-3.5 w-3.5" />
+          </a>
         </div>
-        <a
-          href="https://mainsitesend.vercel.app/followups"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex items-center gap-1.5 px-3 py-1.5 bg-primary hover:bg-primary/95 text-white rounded text-xs font-semibold shadow-sm transition-all duration-200 cursor-pointer flex-shrink-0"
-        >
-          <span>Launch Mailer</span>
-          <ExternalLink className="h-3.5 w-3.5" />
-        </a>
-      </div>
+      )}
 
       {/* Widget toggles panel */}
       {isConfiguring && (
@@ -1152,56 +1156,77 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
         </div>
       )}
 
-      {/* Grid of Draggable Widgets */}
-      <div className="grid grid-cols-1 md:grid-cols-6 gap-6">
-        {widgetList.map((widgetId) => {
-          if (!visibleWidgets[widgetId]) return null;
+      {/* Grid of Widgets */}
+      {currentUser?.role === 'head' ? (
+        <div className="grid grid-cols-1 lg:grid-cols-6 gap-6">
+          {/* Row 1: Metrics */}
+          <div className="col-span-6">{renderHeadMetrics()}</div>
 
-          return (
-            <div
-              key={widgetId}
-              draggable="true"
-              onDragStart={(e) => handleDragStart(e, widgetId)}
-              onDragOver={handleDragOver}
-              onDrop={(e) => handleDrop(e, widgetId)}
-              className={`relative flex flex-col group select-none transition-shadow ${getWidgetWidthClass(widgetId)}`}
-            >
-              {/* Drag handles & resizing bar overlay when configuring */}
-              {isConfiguring && (
-                <div className="absolute top-2.5 right-2 flex items-center gap-1.5 z-20 bg-background/90 backdrop-blur-sm p-1 rounded-md border border-border shadow-sm">
-                  {/* Width selector dropdown */}
-                  <select
-                    value={widgetWidths[widgetId] || '1/3'}
-                    onChange={(e) => handleWidgetWidthChange(widgetId, e.target.value as any)}
-                    className="text-[9px] font-bold bg-background border border-border rounded px-1 py-0.5 focus:outline-none cursor-pointer"
-                  >
-                    <option value="1/3">1/3 Width</option>
-                    <option value="1/2">1/2 Width</option>
-                    <option value="2/3">2/3 Width</option>
-                    <option value="full">Full Width</option>
-                  </select>
-                  <div
-                    title="Drag from here to rearrange"
-                    className="p-1 hover:bg-muted text-muted-foreground hover:text-foreground rounded cursor-grab active:cursor-grabbing border border-border/40"
-                  >
-                    <GripVertical className="h-3.5 w-3.5" />
+          {/* Row 2: Distribution & Activity */}
+          <div className="col-span-6 lg:col-span-4 space-y-6">
+            {renderLifecycleWidget()}
+            {renderRecentActivityWidget()}
+          </div>
+
+          {/* Sidebar widgets */}
+          <div className="col-span-6 lg:col-span-2 space-y-6">
+            {renderTeammatesWidget()}
+            {renderUpcomingRemindersWidget()}
+            {renderTeamPresenceWidget()}
+            {renderMiniCalendarWidget()}
+          </div>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-6 gap-6">
+          {widgetList.map((widgetId) => {
+            if (!visibleWidgets[widgetId]) return null;
+
+            return (
+              <div
+                key={widgetId}
+                draggable="true"
+                onDragStart={(e) => handleDragStart(e, widgetId)}
+                onDragOver={handleDragOver}
+                onDrop={(e) => handleDrop(e, widgetId)}
+                className={`relative flex flex-col group select-none transition-shadow ${getWidgetWidthClass(widgetId)}`}
+              >
+                {/* Drag handles & resizing bar overlay when configuring */}
+                {isConfiguring && (
+                  <div className="absolute top-2.5 right-2 flex items-center gap-1.5 z-20 bg-background/90 backdrop-blur-sm p-1 rounded-md border border-border shadow-sm">
+                    {/* Width selector dropdown */}
+                    <select
+                      value={widgetWidths[widgetId] || '1/3'}
+                      onChange={(e) => handleWidgetWidthChange(widgetId, e.target.value as any)}
+                      className="text-[9px] font-bold bg-background border border-border rounded px-1 py-0.5 focus:outline-none cursor-pointer"
+                    >
+                      <option value="1/3">1/3 Width</option>
+                      <option value="1/2">1/2 Width</option>
+                      <option value="2/3">2/3 Width</option>
+                      <option value="full">Full Width</option>
+                    </select>
+                    <div
+                      title="Drag from here to rearrange"
+                      className="p-1 hover:bg-muted text-muted-foreground hover:text-foreground rounded cursor-grab active:cursor-grabbing border border-border/40"
+                    >
+                      <GripVertical className="h-3.5 w-3.5" />
+                    </div>
+                    <button
+                      onClick={() => toggleWidgetVisibility(widgetId)}
+                      title="Hide widget"
+                      className="p-1 hover:bg-muted text-muted-foreground hover:text-foreground rounded cursor-pointer border border-border/40 text-danger"
+                    >
+                      <EyeOff className="h-3.5 w-3.5" />
+                    </button>
                   </div>
-                  <button
-                    onClick={() => toggleWidgetVisibility(widgetId)}
-                    title="Hide widget"
-                    className="p-1 hover:bg-muted text-muted-foreground hover:text-foreground rounded cursor-pointer border border-border/40 text-danger"
-                  >
-                    <EyeOff className="h-3.5 w-3.5" />
-                  </button>
-                </div>
-              )}
+                )}
 
-              {/* Render actual widget details */}
-              {renderWidget(widgetId)}
-            </div>
-          );
-        })}
-      </div>
+                {/* Render actual widget details */}
+                {renderWidget(widgetId)}
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 };
