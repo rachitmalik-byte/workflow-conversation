@@ -201,7 +201,7 @@ export const TutorialTour: React.FC<TutorialTourProps> = ({ currentView, onNavig
             )}
             <button
               onClick={handleNext}
-              className="flex items-center justify-center gap-1.5 h-8 px-4 rounded bg-primary text-white text-xs font-semibold hover:bg-primary/95 shadow-sm transition-colors cursor-pointer font-bold"
+              className="flex items-center justify-center gap-1.5 h-8 px-4 rounded bg-primary text-primary-foreground text-xs font-semibold hover:bg-primary/95 shadow-sm transition-colors cursor-pointer font-bold"
             >
               <span>{stepIndex === steps.length - 1 ? 'Finish Tour' : 'Next'}</span>
               {stepIndex < steps.length - 1 && <ChevronRight className="h-3.5 w-3.5" />}

@@ -231,27 +231,13 @@ const MainAppContent: React.FC = () => {
           body,
           icon: '/favicon.ico',
           tag: reminderId || 'general',
-          requireInteraction: reminderId ? true : false,
-          actions: reminderId ? [
-            { action: 'dismiss', title: 'Dismiss' },
-            { action: 'snooze', title: 'Snooze (5m)' }
-          ] : []
-        } as any);
+          requireInteraction: reminderId ? true : false
+        });
 
-        if (reminderId) {
-          notif.addEventListener('action', (event: any) => {
-            if (event.action === 'dismiss') {
-              handleDismissAlarm(reminderId);
-            } else if (event.action === 'snooze') {
-              handleSnoozeAlarm(reminderId);
-            }
-            notif.close();
-          });
-          notif.onclick = () => {
-            window.focus();
-            notif.close();
-          };
-        }
+        notif.onclick = () => {
+          window.focus();
+          notif.close();
+        };
       } catch (e) {
         console.error('Desktop notification failed:', e);
       }
@@ -491,24 +477,52 @@ const MainAppContent: React.FC = () => {
 
   useEffect(() => {
     fetchReminders();
-    const interval = setInterval(() => {
-      localCheckDueReminders();
-      // Periodic check for presence override expiration
-      const mode = localStorage.getItem('relayhq_presence_mode') || 'automatic';
-      if (mode === 'manual') {
-        const until = parseInt(localStorage.getItem('relayhq_presence_manual_until') || '0', 10);
-        if (Date.now() > until) {
-          localStorage.setItem('relayhq_presence_mode', 'automatic');
-          localStorage.removeItem('relayhq_presence_manual_until');
-          localStorage.removeItem('relayhq_presence_manual_status');
-          // Re-trigger online presence check
-          if (currentUser) {
-            dbClient.updateProfile(currentUser.id, { presence: document.hasFocus() ? 'online' : 'idle' });
+
+    // Inline Web Worker to bypass main thread browser tab timer throttling in background tabs
+    const workerCode = `
+      let timer = null;
+      self.onmessage = function(e) {
+        if (e.data === 'start') {
+          if (timer) clearInterval(timer);
+          timer = setInterval(() => {
+            self.postMessage('tick');
+          }, 5000);
+        } else if (e.data === 'stop') {
+          if (timer) clearInterval(timer);
+        }
+      };
+    `;
+    const blob = new Blob([workerCode], { type: 'application/javascript' });
+    const workerUrl = URL.createObjectURL(blob);
+    const worker = new Worker(workerUrl);
+
+    worker.onmessage = (e) => {
+      if (e.data === 'tick') {
+        localCheckDueReminders();
+        // Periodic check for presence override expiration
+        const mode = localStorage.getItem('relayhq_presence_mode') || 'automatic';
+        if (mode === 'manual') {
+          const until = parseInt(localStorage.getItem('relayhq_presence_manual_until') || '0', 10);
+          if (Date.now() > until) {
+            localStorage.setItem('relayhq_presence_mode', 'automatic');
+            localStorage.removeItem('relayhq_presence_manual_until');
+            localStorage.removeItem('relayhq_presence_manual_status');
+            // Re-trigger online presence check
+            if (currentUser) {
+              dbClient.updateProfile(currentUser.id, { presence: document.hasFocus() ? 'online' : 'idle' });
+            }
           }
         }
       }
-    }, 5000);
+    };
+    worker.postMessage('start');
 
+    // Instantly check and fetch reminders when browser tab returns to focus or visibility state turns visible
+    const handleSyncOnFocus = () => {
+      fetchReminders();
+    };
+    window.addEventListener('focus', handleSyncOnFocus);
+    document.addEventListener('visibilitychange', handleSyncOnFocus);
 
     const unsubscribe = dbClient.subscribe((table, type, payload) => {
       if (table === 'reminders') {
@@ -595,7 +609,11 @@ const MainAppContent: React.FC = () => {
     });
 
     return () => {
-      clearInterval(interval);
+      worker.postMessage('stop');
+      worker.terminate();
+      URL.revokeObjectURL(workerUrl);
+      window.removeEventListener('focus', handleSyncOnFocus);
+      document.removeEventListener('visibilitychange', handleSyncOnFocus);
       unsubscribe();
     };
   }, [currentUser]);

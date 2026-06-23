@@ -536,11 +536,18 @@ class MemoryDB {
   supabaseUrl = '';
   supabaseKey = '';
   
-  notificationSettings = {
-    desktopAlerts: true,
-    soundAlerts: true,
-    messagePreviews: true,
-  };
+  notificationSettings = (() => {
+    try {
+      const saved = localStorage.getItem('relayhq_notification_settings');
+      if (saved) return JSON.parse(saved);
+    } catch (e) {}
+    return {
+      desktopAlerts: true,
+      soundAlerts: true,
+      messagePreviews: true,
+    };
+  })();
+
 
   // Active User Profile Simulation
   currentUser: Profile = MOCK_PROFILES[0]; // defaults to Head (Sarah Jenkins)

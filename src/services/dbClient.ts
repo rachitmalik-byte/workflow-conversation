@@ -798,6 +798,9 @@ class DBClient {
 
   setNotificationSettings(settings: typeof mockDb.notificationSettings) {
     mockDb.notificationSettings = settings;
+    try {
+      localStorage.setItem('relayhq_notification_settings', JSON.stringify(settings));
+    } catch (e) {}
   }
 
   // Google Chat API operations

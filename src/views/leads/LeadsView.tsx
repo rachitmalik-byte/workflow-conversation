@@ -381,7 +381,7 @@ export const LeadsView: React.FC<LeadsViewProps> = ({ onNavigate }) => {
 
         <button
           onClick={() => onNavigate('leads/new')}
-          className="flex items-center justify-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-primary hover:bg-primary/95 shadow-sm rounded-md transition-colors"
+          className="flex items-center justify-center gap-2 px-4 py-2 text-sm font-semibold text-primary-foreground bg-primary hover:bg-primary/95 shadow-sm rounded-md transition-colors"
         >
           <Plus className="h-4 w-4" />
           <span>Create New Project</span>
@@ -513,7 +513,7 @@ export const LeadsView: React.FC<LeadsViewProps> = ({ onNavigate }) => {
           </p>
           <button
             onClick={() => onNavigate('leads/new')}
-            className="mt-4 px-4 py-2 text-xs font-semibold text-white bg-primary rounded hover:bg-primary/95 transition-colors"
+            className="mt-4 px-4 py-2 text-xs font-semibold text-primary-foreground bg-primary rounded hover:bg-primary/95 transition-colors"
           >
             Create New Project
           </button>

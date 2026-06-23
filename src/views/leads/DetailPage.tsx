@@ -373,13 +373,13 @@ export const DetailPage: React.FC<DetailPageProps> = ({ leadId, onNavigate }) =>
   }
 
   const statusColors: Record<string, string> = {
-    new: 'bg-slate-100 text-slate-600 border-slate-200',
-    contacted: 'bg-blue-50 text-blue-600 border-blue-200',
-    qualified: 'bg-emerald-50 text-emerald-600 border-emerald-200',
-    proposal: 'bg-indigo-50 text-indigo-600 border-indigo-200',
-    negotiation: 'bg-amber-50 text-amber-600 border-amber-200',
-    closed_won: 'bg-green-50 text-green-700 border-green-200',
-    closed_lost: 'bg-red-50 text-red-600 border-red-200',
+    new: 'bg-slate-100 dark:bg-slate-900/60 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-800',
+    contacted: 'bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-300 border-blue-200 dark:border-blue-900/50',
+    qualified: 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-300 border-emerald-200 dark:border-emerald-900/50',
+    proposal: 'bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-300 border-indigo-200 dark:border-indigo-900/50',
+    negotiation: 'bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-300 border-amber-200 dark:border-amber-900/50',
+    closed_won: 'bg-green-50 dark:bg-green-950/40 text-green-700 dark:text-green-300 border-green-200 dark:border-green-900/50',
+    closed_lost: 'bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-300 border-red-200 dark:border-red-900/50',
   };
 
   return (
@@ -404,9 +404,9 @@ export const DetailPage: React.FC<DetailPageProps> = ({ leadId, onNavigate }) =>
                   {lead.status.replace('_', ' ')}
                 </span>
                 <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase border ${
-                  lead.priority === 'high' ? 'bg-red-50 text-red-600 border-red-200' :
-                  lead.priority === 'medium' ? 'bg-amber-50 text-amber-600 border-amber-200' :
-                  'bg-slate-100 text-slate-500 border-slate-200'
+                  lead.priority === 'high' ? 'bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-300 border-red-200 dark:border-red-900/50' :
+                  lead.priority === 'medium' ? 'bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-300 border-amber-200 dark:border-amber-900/50' :
+                  'bg-slate-100 dark:bg-slate-900/60 text-slate-500 dark:text-slate-300 border-slate-200 dark:border-slate-800'
                 }`}>
                   {lead.priority}
                 </span>
@@ -764,7 +764,7 @@ export const DetailPage: React.FC<DetailPageProps> = ({ leadId, onNavigate }) =>
                               : 'chat-bubble-incoming rounded-tl-sm'
                           }`}>
                             <div className="whitespace-pre-wrap break-words space-y-1">
-                              {parseMarkdown(update.content, isMe)}
+                              {parseMarkdown(update.content)}
                             </div>
                           </div>
                           
@@ -879,7 +879,7 @@ function InfoRow({ icon, label, children }: { icon: React.ReactNode; label: stri
 // ─────────────────────────────────────────────────────────────────
 // Helper: parseMarkdown
 // ─────────────────────────────────────────────────────────────────
-function parseInlineStyles(text: string, isOutgoing?: boolean): React.ReactNode {
+function parseInlineStyles(text: string): React.ReactNode {
   // Matches bold, italic, code, link patterns, and raw URLs
   // Link pattern: \[([^\]]+)\]\(([^)]+)\)
   // Bold pattern: \*\*([^*]+)\*\*
@@ -891,21 +891,19 @@ function parseInlineStyles(text: string, isOutgoing?: boolean): React.ReactNode 
 
   return parts.map((part, idx) => {
     if (part.startsWith('**') && part.endsWith('**')) {
-      return <strong key={idx} className="font-extrabold text-foreground">{part.slice(2, -2)}</strong>;
+      return <strong key={idx} className="font-extrabold">{part.slice(2, -2)}</strong>;
     }
     if (part.startsWith('*') && part.endsWith('*')) {
-      return <em key={idx} className="italic text-foreground">{part.slice(1, -1)}</em>;
+      return <em key={idx} className="italic">{part.slice(1, -1)}</em>;
     }
     if (part.startsWith('`') && part.endsWith('`')) {
-      return <code key={idx} className="bg-muted text-foreground px-1 py-0.5 rounded font-mono text-[11px]">{part.slice(1, -1)}</code>;
+      return <code key={idx} className="bg-muted/30 px-1 py-0.5 rounded font-mono text-[11px]">{part.slice(1, -1)}</code>;
     }
     if (part.startsWith('[') && part.includes('](') && part.endsWith(')')) {
       const closeBracketIdx = part.indexOf('](');
       const label = part.slice(1, closeBracketIdx);
       const url = part.slice(closeBracketIdx + 2, -1);
-      const linkClass = isOutgoing
-        ? 'text-sky-200 hover:text-white underline font-bold break-all'
-        : 'text-primary hover:underline font-medium break-all';
+      const linkClass = 'text-current hover:opacity-80 underline font-bold break-all';
       return (
         <a key={idx} href={url} target="_blank" rel="noopener noreferrer" className={linkClass}>
           {label}
@@ -914,9 +912,7 @@ function parseInlineStyles(text: string, isOutgoing?: boolean): React.ReactNode 
     }
     if (part.startsWith('http://') || part.startsWith('https://') || part.startsWith('www.')) {
       const href = part.startsWith('www.') ? 'http://' + part : part;
-      const linkClass = isOutgoing
-        ? 'text-sky-200 hover:text-white underline font-bold break-all decoration-1'
-        : 'text-blue-500 hover:underline font-medium break-all decoration-1';
+      const linkClass = 'text-current hover:opacity-80 underline font-bold break-all';
       return (
         <a key={idx} href={href} target="_blank" rel="noopener noreferrer" className={linkClass}>
           {part}
@@ -927,7 +923,7 @@ function parseInlineStyles(text: string, isOutgoing?: boolean): React.ReactNode 
   });
 }
 
-function parseMarkdown(text: string, isOutgoing?: boolean): React.ReactNode {
+function parseMarkdown(text: string): React.ReactNode {
   if (!text) return null;
 
   const lines = text.split('\n');
@@ -944,37 +940,37 @@ function parseMarkdown(text: string, isOutgoing?: boolean): React.ReactNode {
 
     if (isH3) {
       return (
-        <h4 key={idx} className="text-[11px] font-bold text-foreground mt-3 mb-1 uppercase tracking-wider">
-          {parseInlineStyles(trimmed.substring(4), isOutgoing)}
+        <h4 key={idx} className="text-[11px] font-bold mt-3 mb-1 uppercase tracking-wider">
+          {parseInlineStyles(trimmed.substring(4))}
         </h4>
       );
     }
     if (isH2) {
       return (
-        <h3 key={idx} className="text-xs font-extrabold text-foreground mt-4 mb-1.5 border-b border-border pb-0.5">
-          {parseInlineStyles(trimmed.substring(3), isOutgoing)}
+        <h3 key={idx} className="text-xs font-extrabold mt-4 mb-1.5 border-b border-border/30 pb-0.5">
+          {parseInlineStyles(trimmed.substring(3))}
         </h3>
       );
     }
     if (isH1) {
       return (
-        <h2 key={idx} className="text-sm font-extrabold text-foreground mt-5 mb-2">
-          {parseInlineStyles(trimmed.substring(2), isOutgoing)}
+        <h2 key={idx} className="text-sm font-extrabold mt-5 mb-2">
+          {parseInlineStyles(trimmed.substring(2))}
         </h2>
       );
     }
     
     if (isBullet) {
       return (
-        <li key={idx} className="list-disc ml-4 my-1 text-xs text-foreground/95 leading-relaxed">
-          {parseInlineStyles(trimmed.substring(2), isOutgoing)}
+        <li key={idx} className="list-disc ml-4 my-1 text-xs leading-relaxed">
+          {parseInlineStyles(trimmed.substring(2))}
         </li>
       );
     }
 
     return (
-      <p key={idx} className="min-h-[16px] text-xs text-foreground/95 leading-relaxed my-1 whitespace-pre-wrap">
-        {parseInlineStyles(line, isOutgoing)}
+      <p key={idx} className="min-h-[16px] text-xs leading-relaxed my-1 whitespace-pre-wrap">
+        {parseInlineStyles(line)}
       </p>
     );
   });

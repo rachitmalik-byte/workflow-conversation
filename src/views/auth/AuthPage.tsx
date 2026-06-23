@@ -177,12 +177,12 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onBypass, onSuccess }) => {
         
         {/* Header Branding */}
         <div className="flex items-center gap-2.5 mb-8 lg:mb-0">
-          <div className="flex h-9 w-9 items-center justify-center rounded bg-primary text-white font-black text-lg shadow-sm">
+          <div className="flex h-9 w-9 items-center justify-center rounded bg-primary text-primary-foreground font-black text-lg shadow-sm">
             R
           </div>
           <div>
             <h2 className="text-base font-extrabold text-foreground tracking-tight leading-none">RelayHQ</h2>
-            <p className="text-[10px] text-muted-foreground mt-0.5 font-medium">Sales Command Center</p>
+            <p className="text-[10px] text-muted-foreground mt-0.5 font-medium">Workflow Command Center</p>
           </div>
         </div>
 

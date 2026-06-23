@@ -403,7 +403,7 @@ export const RemindersView: React.FC = () => {
           {!isCreating && (
             <button
               onClick={() => setIsCreating(true)}
-              className="flex items-center justify-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-primary hover:bg-primary/95 shadow-sm rounded-md transition-colors"
+              className="flex items-center justify-center gap-2 px-4 py-2 text-sm font-semibold text-primary-foreground bg-primary hover:bg-primary/95 shadow-sm rounded-md transition-colors"
             >
               <Plus className="h-4 w-4" />
               <span>Schedule Event</span>
@@ -688,7 +688,7 @@ export const RemindersView: React.FC = () => {
               </button>
               <button
                 type="submit"
-                className="px-4 py-2 text-sm font-semibold text-white bg-primary hover:bg-primary/95 rounded transition-colors"
+                className="px-4 py-2 text-sm font-semibold text-primary-foreground bg-primary hover:bg-primary/95 rounded transition-colors"
               >
                 Set Reminder
               </button>
@@ -791,7 +791,7 @@ export const RemindersView: React.FC = () => {
                         <span
                           className={`text-[10px] lg:text-xs font-bold px-1 py-0.5 rounded-full ${
                             isToday
-                              ? 'bg-primary text-white font-extrabold shadow-sm'
+                              ? 'bg-primary text-primary-foreground font-extrabold shadow-sm'
                               : 'text-foreground'
                           }`}
                         >
@@ -1132,7 +1132,7 @@ export const RemindersView: React.FC = () => {
 
               <button
                 onClick={() => setSelectedReminder(null)}
-                className="px-4 py-2 bg-primary hover:bg-primary/95 text-white rounded-lg text-xs font-semibold shadow-sm transition-colors cursor-pointer"
+                className="px-4 py-2 bg-primary hover:bg-primary/95 text-primary-foreground rounded-lg text-xs font-semibold shadow-sm transition-colors cursor-pointer"
               >
                 Close Details
               </button>

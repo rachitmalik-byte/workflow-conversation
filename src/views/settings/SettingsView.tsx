@@ -192,6 +192,7 @@ export const SettingsView: React.FC = () => {
   const [notifSuccess, setNotifSuccess] = useState(false);
   const [notificationSound, setNotificationSound] = useState('classic');
   const [alarmSound, setAlarmSound] = useState('sawtooth_triple');
+  const [notificationPermission, setNotificationPermission] = useState<NotificationPermission | 'unsupported'>('default');
 
   // --- Security / Change Password States ---
   const [newPassword, setNewPassword] = useState('');
@@ -224,6 +225,12 @@ export const SettingsView: React.FC = () => {
     setGoogleChatWebhook(localStorage.getItem('relayhq_google_chat_webhook_url') || '');
     setNotificationSound(localStorage.getItem('relayhq_notification_sound') || 'classic');
     setAlarmSound(localStorage.getItem('relayhq_alarm_sound') || 'sawtooth_triple');
+
+    if ('Notification' in window) {
+      setNotificationPermission(Notification.permission);
+    } else {
+      setNotificationPermission('unsupported');
+    }
   }, [currentUser, activeTab]);
 
   // Profile Save Handler
@@ -396,11 +403,58 @@ export const SettingsView: React.FC = () => {
     }
   };
 
+  const handleToggleDesktopAlerts = async (checked: boolean) => {
+    if (checked) {
+      if (!('Notification' in window)) {
+        alert('Desktop Notifications are not supported by this browser.');
+        setDesktopAlerts(false);
+        return;
+      }
+
+      const perm = Notification.permission;
+      if (perm === 'granted') {
+        setDesktopAlerts(true);
+      } else if (perm === 'default') {
+        const res = await Notification.requestPermission();
+        setNotificationPermission(res);
+        if (res === 'granted') {
+          setDesktopAlerts(true);
+        } else {
+          setDesktopAlerts(false);
+          alert(`Permission was ${res}. Desktop notifications will not trigger.`);
+        }
+      } else if (perm === 'denied') {
+        alert('Notifications are blocked by your browser settings. Please click the lock or settings icon in your browser address bar to allow notifications for this site.');
+        setDesktopAlerts(false);
+      }
+    } else {
+      setDesktopAlerts(false);
+    }
+  };
+
   // Notifications Save Handler
-  const handleSaveNotifications = (e: React.FormEvent) => {
+  const handleSaveNotifications = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    let targetAlerts = desktopAlerts;
+    if (desktopAlerts && 'Notification' in window) {
+      const perm = Notification.permission;
+      if (perm === 'default') {
+        const res = await Notification.requestPermission();
+        setNotificationPermission(res);
+        if (res !== 'granted') {
+          targetAlerts = false;
+          setDesktopAlerts(false);
+        }
+      } else if (perm === 'denied') {
+        alert('Notifications are blocked by your browser. Please allow them in your browser settings.');
+        targetAlerts = false;
+        setDesktopAlerts(false);
+      }
+    }
+
     dbClient.setNotificationSettings({
-      desktopAlerts,
+      desktopAlerts: targetAlerts,
       soundAlerts,
       messagePreviews
     });
@@ -687,7 +741,7 @@ export const SettingsView: React.FC = () => {
                 <div className="flex flex-wrap gap-3 pt-2">
                   <button
                     type="submit"
-                    className="px-4 py-2 bg-primary hover:bg-primary/95 text-white rounded text-xs font-semibold shadow-sm transition-colors cursor-pointer font-bold animate-none"
+                    className="px-4 py-2 bg-primary hover:bg-primary/95 text-primary-foreground rounded text-xs font-semibold shadow-sm transition-colors cursor-pointer font-bold animate-none"
                   >
                     Save Profile Changes
                   </button>
@@ -774,7 +828,7 @@ export const SettingsView: React.FC = () => {
                   <div className="flex gap-2">
                     <button
                       type="submit"
-                      className="px-4 py-2 bg-primary hover:bg-primary/95 text-white rounded text-xs font-semibold shadow-sm transition-colors cursor-pointer"
+                      className="px-4 py-2 bg-primary hover:bg-primary/95 text-primary-foreground rounded text-xs font-semibold shadow-sm transition-colors cursor-pointer"
                     >
                       Save Configuration
                     </button>
@@ -987,7 +1041,7 @@ export const SettingsView: React.FC = () => {
                       <button
                         type="submit"
                         disabled={isOnboardingSaving}
-                        className="w-full py-2 bg-primary hover:bg-primary/95 text-white rounded text-xs font-semibold transition-colors disabled:opacity-50 cursor-pointer"
+                        className="w-full py-2 bg-primary hover:bg-primary/95 text-primary-foreground rounded text-xs font-semibold transition-colors disabled:opacity-50 cursor-pointer"
                       >
                         {isOnboardingSaving ? 'Creating...' : 'Onboard Teammate'}
                       </button>
@@ -1018,17 +1072,73 @@ export const SettingsView: React.FC = () => {
                 )}
               </div>
 
+              {desktopAlerts && 'Notification' in window && Notification.permission !== 'granted' && (
+                <div className="p-3.5 rounded-lg border text-xs leading-relaxed flex items-start gap-2.5 bg-amber-500/10 border-amber-500/20 text-amber-800 dark:text-amber-300">
+                  <AlertCircle className="h-4 w-4 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="font-bold text-foreground">Desktop Notifications Action Required</p>
+                    <p className="mt-0.5 text-muted-foreground text-[11px]">
+                      {Notification.permission === 'default' 
+                        ? 'To receive alerts when the app is in a different tab, you must authorize browser notification permissions.' 
+                        : 'Notifications are blocked in your browser settings. You must unblock them in your browser URL bar settings (click lock icon next to site URL) to receive alerts.'}
+                    </p>
+                    {Notification.permission === 'default' && (
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          const res = await Notification.requestPermission();
+                          setNotificationPermission(res);
+                          if (res === 'granted') {
+                            setDesktopAlerts(true);
+                          }
+                        }}
+                        className="mt-2 px-3 py-1 bg-amber-500 text-black text-[10px] font-bold rounded hover:bg-amber-400 transition-colors cursor-pointer"
+                      >
+                        Grant Notification Permission Now
+                      </button>
+                    )}
+                  </div>
+                </div>
+              )}
+
               <form onSubmit={handleSaveNotifications} className="space-y-6 text-xs sm:text-sm">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                   <div className="flex items-center justify-between p-3 bg-muted/10 hover:bg-muted/20 rounded-lg border border-border/45">
                     <div>
-                      <p className="font-semibold text-foreground text-xs sm:text-sm">Desktop Push Alerts</p>
+                      <div className="flex items-center gap-2">
+                        <p className="font-semibold text-foreground text-xs sm:text-sm">Desktop Push Alerts</p>
+                        {notificationPermission === 'granted' && (
+                          <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-success/15 text-success border border-success/30">
+                            Granted
+                          </span>
+                        )}
+                        {notificationPermission === 'default' && (
+                          <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-primary/15 text-primary border border-primary/30 animate-pulse">
+                            Permission Required
+                          </span>
+                        )}
+                        {notificationPermission === 'denied' && (
+                          <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-danger/15 text-danger border border-danger/30">
+                            Blocked by Browser
+                          </span>
+                        )}
+                        {notificationPermission === 'unsupported' && (
+                          <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-muted text-muted-foreground border border-border">
+                            Unsupported
+                          </span>
+                        )}
+                      </div>
                       <p className="text-[10px] text-muted-foreground mt-0.5">Show notifications when window is unfocused.</p>
+                      {notificationPermission === 'denied' && (
+                        <p className="text-[9px] text-danger/80 mt-1 font-medium leading-relaxed">
+                          ⚠️ Click the lock/settings icon in your browser URL bar to allow notifications for this app.
+                        </p>
+                      )}
                     </div>
                     <input
                       type="checkbox"
                       checked={desktopAlerts}
-                      onChange={(e) => setDesktopAlerts(e.target.checked)}
+                      onChange={(e) => handleToggleDesktopAlerts(e.target.checked)}
                       className="h-4 w-4 border-border rounded text-primary focus:ring-primary cursor-pointer animate-none"
                     />
                   </div>
@@ -1126,7 +1236,7 @@ export const SettingsView: React.FC = () => {
 
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-primary hover:bg-primary/95 text-white rounded text-xs font-semibold shadow-sm transition-colors cursor-pointer animate-none"
+                  className="px-4 py-2 bg-primary hover:bg-primary/95 text-primary-foreground rounded text-xs font-semibold shadow-sm transition-colors cursor-pointer animate-none"
                 >
                   Save Notification Toggles
                 </button>
@@ -1151,7 +1261,7 @@ export const SettingsView: React.FC = () => {
                           alert(`Notification permission response: ${res}`);
                           window.location.reload();
                         }}
-                        className="px-2.5 py-1.5 bg-primary text-white text-[10px] font-semibold rounded hover:bg-primary/95 transition-colors cursor-pointer"
+                        className="px-2.5 py-1.5 bg-primary text-primary-foreground text-[10px] font-semibold rounded hover:bg-primary/95 transition-colors cursor-pointer"
                       >
                         Request Permission
                       </button>
@@ -1273,7 +1383,7 @@ export const SettingsView: React.FC = () => {
                 <button
                   type="submit"
                   disabled={isSavingPassword}
-                  className="px-4 py-2 bg-primary hover:bg-primary/95 text-white rounded text-xs font-semibold shadow-sm transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="px-4 py-2 bg-primary hover:bg-primary/95 text-primary-foreground rounded text-xs font-semibold shadow-sm transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {isSavingPassword ? 'Updating...' : 'Update Password'}
                 </button>

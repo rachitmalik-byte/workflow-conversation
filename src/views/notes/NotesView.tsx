@@ -200,7 +200,7 @@ export const NotesView: React.FC = () => {
                 )}
                 <button
                   onClick={handleSaveNote}
-                  className="flex items-center gap-1.5 px-3 py-1.5 bg-primary hover:bg-primary/95 text-white rounded text-xs font-semibold shadow-sm transition-colors cursor-pointer"
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-primary hover:bg-primary/95 text-primary-foreground rounded text-xs font-semibold shadow-sm transition-colors cursor-pointer"
                   title="Save scratch notes"
                 >
                   <Save className="h-3.5 w-3.5" />
@@ -271,7 +271,7 @@ export const NotesView: React.FC = () => {
             <p className="text-[10px] mt-1">Select an existing scratchpad template or create a new one.</p>
             <button
               onClick={handleCreateNewNote}
-              className="mt-3 px-3 py-1.5 bg-primary hover:bg-primary/95 text-white rounded font-semibold text-[10px] transition-colors"
+              className="mt-3 px-3 py-1.5 bg-primary hover:bg-primary/95 text-primary-foreground rounded font-semibold text-[10px] transition-colors"
             >
               New Scratch Note
             </button>

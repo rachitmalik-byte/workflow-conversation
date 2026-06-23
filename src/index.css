@@ -924,11 +924,54 @@
     color: hsl(var(--chat-bubble-out-foreground)) !important;
     border-color: hsl(var(--chat-bubble-out) / 0.8) !important;
   }
+  .chat-bubble-outgoing,
+  .chat-bubble-outgoing p,
+  .chat-bubble-outgoing span,
+  .chat-bubble-outgoing div,
+  .chat-bubble-outgoing strong,
+  .chat-bubble-outgoing a {
+    color: hsl(var(--chat-bubble-out-foreground)) !important;
+  }
+  .chat-bubble-outgoing code {
+    color: hsl(var(--foreground)) !important;
+  }
 
   .chat-bubble-incoming {
     background-color: hsl(var(--chat-bubble-in)) !important;
     color: hsl(var(--chat-bubble-in-foreground)) !important;
     border-color: hsl(var(--chat-bubble-in) / 0.8) !important;
+  }
+  .chat-bubble-incoming,
+  .chat-bubble-incoming p,
+  .chat-bubble-incoming span,
+  .chat-bubble-incoming div,
+  .chat-bubble-incoming strong,
+  .chat-bubble-incoming a {
+    color: hsl(var(--chat-bubble-in-foreground)) !important;
+  }
+  .chat-bubble-incoming code {
+    color: hsl(var(--foreground)) !important;
+  }
+
+  .chat-bubble a {
+    text-decoration: underline !important;
+    font-weight: 700 !important;
+  }
+  .chat-bubble a:hover {
+    opacity: 0.85 !important;
+  }
+
+  .bg-primary {
+    background-color: hsl(var(--primary)) !important;
+    color: hsl(var(--primary-foreground)) !important;
+  }
+  .bg-secondary {
+    background-color: hsl(var(--secondary)) !important;
+    color: hsl(var(--secondary-foreground)) !important;
+  }
+  .bg-accent {
+    background-color: hsl(var(--accent)) !important;
+    color: hsl(var(--accent-foreground)) !important;
   }
 
   /* Specific theme overrides for chat bubbles */

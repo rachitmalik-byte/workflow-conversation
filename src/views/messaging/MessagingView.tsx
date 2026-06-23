@@ -625,7 +625,7 @@ export const MessagingView: React.FC = () => {
     return { title: 'Messaging', desc: '', isPrivate: false };
   };
 
-  const renderMessageBody = (text: string, isOutgoingMessage: boolean) => {
+  const renderMessageBody = (text: string) => {
     let body = text;
     const boldRegex = /\*\*(.*?)\*\*/g;
     const italicRegex = /\*(.*?)\*/g;
@@ -641,16 +641,14 @@ export const MessagingView: React.FC = () => {
     const urlRegex = /(\b(https?|ftp):\/\/[-A-Z0-9+&@#\/%?=~_|!:,.;]*[-A-Z0-9+&@#\/%=~_|]|\bwww\.[-A-Z0-9+&@#\/%?=~_|!:,.;]*[-A-Z0-9+&@#\/%=~_|])/ig;
     body = body.replace(urlRegex, (url) => {
       const hyperLink = url.match(/^https?:\/\//i) ? url : 'http://' + url;
-      const linkClass = isOutgoingMessage 
-        ? 'text-sky-200 hover:text-white underline font-bold break-all' 
-        : 'text-blue-600 hover:text-blue-800 underline font-bold break-all';
+      const linkClass = 'text-current hover:opacity-85 underline font-bold break-all';
       return `<a href="${hyperLink}" target="_blank" rel="noopener noreferrer" class="${linkClass}">${url}</a>`;
     });
 
     // Format markdown elements
     body = body.replace(boldRegex, '<strong>$1</strong>');
     body = body.replace(italicRegex, '<em>$2</em>');
-    body = body.replace(codeRegex, '<code class="bg-muted px-1 rounded text-xs font-mono">$1</code>');
+    body = body.replace(codeRegex, '<code class="bg-muted/30 px-1 rounded text-xs font-mono">$1</code>');
 
     return <div dangerouslySetInnerHTML={{ __html: body }} className="rich-text-content leading-relaxed break-words" />;
   };
@@ -890,7 +888,7 @@ export const MessagingView: React.FC = () => {
                 <button
                   type="button"
                   onClick={reconnectGoogle}
-                  className="w-full py-1.5 bg-primary hover:bg-primary/95 text-white rounded-lg text-[10px] font-bold cursor-pointer transition-colors"
+                  className="w-full py-1.5 bg-primary hover:bg-primary/95 text-primary-foreground rounded-lg text-[10px] font-bold cursor-pointer transition-colors"
                 >
                   Reconnect Google Chat
                 </button>
@@ -905,7 +903,7 @@ export const MessagingView: React.FC = () => {
                 <button
                   type="button"
                   onClick={reconnectGoogle}
-                  className="w-full py-1.5 bg-primary hover:bg-primary/95 text-white rounded text-xs font-bold shadow-sm cursor-pointer"
+                  className="w-full py-1.5 bg-primary hover:bg-primary/95 text-primary-foreground rounded text-xs font-bold shadow-sm cursor-pointer"
                 >
                   Connect Google Account
                 </button>
@@ -1109,7 +1107,7 @@ export const MessagingView: React.FC = () => {
                               {isOutgoing ? 'You' : msg.sender_name}
                             </span>
                             <div className="whitespace-pre-wrap break-words">
-                              {renderMessageBody(msg.content, isOutgoing)}
+                              {renderMessageBody(msg.content)}
                             </div>
                             <div className="flex items-center justify-end gap-1.5 mt-1">
                               {msg.isOptimistic && (
@@ -1343,7 +1341,7 @@ export const MessagingView: React.FC = () => {
                             </div>
                           ) : (
                             <div className="whitespace-pre-wrap break-words">
-                              {renderMessageBody(msg.content, isOutgoing)}
+                              {renderMessageBody(msg.content)}
                             </div>
                           )}
                         </div>
@@ -1552,7 +1550,7 @@ export const MessagingView: React.FC = () => {
                   setSelectedProfile(null);
                   selectDMUser(selectedProfile.id);
                 }}
-                className="w-full py-2 bg-primary hover:bg-primary/95 text-white font-bold text-xs rounded-lg transition-colors cursor-pointer shadow-sm"
+                className="w-full py-2 bg-primary hover:bg-primary/95 text-primary-foreground font-bold text-xs rounded-lg transition-colors cursor-pointer shadow-sm"
               >
                 Send Direct Message
               </button>

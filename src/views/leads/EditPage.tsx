@@ -306,7 +306,7 @@ export const EditPage: React.FC<EditPageProps> = ({ leadId, onNavigate }) => {
         <p className="text-sm text-muted-foreground mt-2">{error}</p>
         <button
           onClick={() => onNavigate('leads')}
-          className="mt-4 px-4 py-2 text-xs font-semibold bg-primary text-white rounded hover:bg-primary/95 transition-colors"
+          className="mt-4 px-4 py-2 text-xs font-semibold bg-primary text-primary-foreground rounded hover:bg-primary/95 transition-colors"
         >
           Return to Projects
         </button>
@@ -727,7 +727,7 @@ export const EditPage: React.FC<EditPageProps> = ({ leadId, onNavigate }) => {
             <button
               type="submit"
               disabled={isSaving}
-              className="px-4 py-2 text-sm font-medium text-white bg-primary hover:bg-primary/95 disabled:opacity-50 rounded transition-colors"
+              className="px-4 py-2 text-sm font-medium text-primary-foreground bg-primary hover:bg-primary/95 disabled:opacity-50 rounded transition-colors"
             >
               {isSaving ? 'Saving...' : 'Save Updates'}
             </button>

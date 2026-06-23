@@ -149,7 +149,7 @@ export const ProfileSetupModal: React.FC<ProfileSetupModalProps> = ({
             <button
               type="submit"
               disabled={isSubmitting}
-              className="w-full flex items-center justify-center gap-2 py-3 px-4 bg-primary hover:bg-primary/95 disabled:bg-primary/70 text-white text-sm font-bold rounded-xl transition-colors shadow-lg cursor-pointer"
+              className="w-full flex items-center justify-center gap-2 py-3 px-4 bg-primary hover:bg-primary/95 disabled:bg-primary/70 text-primary-foreground text-sm font-bold rounded-xl transition-colors shadow-lg cursor-pointer"
             >
               {isSubmitting ? (
                 <>
