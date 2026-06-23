@@ -74,7 +74,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
     };
 
     checkUnread();
-    const interval = setInterval(checkUnread, 3000);
     const handleUnreadUpdate = () => {
       checkUnread();
     };
@@ -84,7 +83,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
     });
 
     return () => {
-      clearInterval(interval);
       window.removeEventListener('unread-counts-updated', handleUnreadUpdate);
       unsubscribe();
     };
@@ -164,7 +162,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <button
               onClick={handleToggle}
               style={{ opacity: isExpanded ? 1 : 0, pointerEvents: isExpanded ? 'auto' : 'none', transition: 'opacity 150ms ease' }}
-              className="hidden md:flex h-6 w-6 flex-shrink-0 items-center justify-center rounded border border-border text-muted-foreground hover:text-foreground bg-muted/40 hover:bg-muted transition-colors cursor-pointer"
+              className={`${isExpanded ? 'hidden md:flex' : 'hidden'} h-6 w-6 flex-shrink-0 items-center justify-center rounded border border-border text-muted-foreground hover:text-foreground bg-muted/40 hover:bg-muted transition-colors cursor-pointer`}
               title={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
             >
               {isCollapsed ? <ChevronRight className="h-3.5 w-3.5" /> : <ChevronLeft className="h-3.5 w-3.5" />}

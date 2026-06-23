@@ -490,8 +490,8 @@ class DBClient {
         text: `${headerText}\n${content}`
       };
 
-      // Use allorigins CORS proxy to bypass browser preflight blockages
-      const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(webhookUrl)}`;
+      // Use corsproxy.io CORS proxy to bypass browser preflight blockages
+      const proxyUrl = `https://corsproxy.io/?url=${encodeURIComponent(webhookUrl)}`;
       
       await fetch(proxyUrl, {
         method: 'POST',
@@ -784,7 +784,7 @@ class DBClient {
       console.warn('Failed to fetch Google userinfo directly, trying proxy:', e);
       try {
         const url = `https://www.googleapis.com/oauth2/v3/userinfo?access_token=${encodeURIComponent(token)}`;
-        const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
+        const proxyUrl = `https://corsproxy.io/?url=${encodeURIComponent(url)}`;
         const res = await fetch(proxyUrl);
         if (!res.ok) throw new Error(`HTTP error ${res.status}`);
         return await res.json();
@@ -799,7 +799,7 @@ class DBClient {
     if (!token) return [];
     try {
       const url = `https://chat.googleapis.com/v1/spaces?access_token=${encodeURIComponent(token)}`;
-      const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
+      const proxyUrl = `https://corsproxy.io/?url=${encodeURIComponent(url)}`;
       const res = await fetch(proxyUrl);
       if (!res.ok) throw new Error(`HTTP error ${res.status}`);
       const data = await res.json();
@@ -820,7 +820,7 @@ class DBClient {
     if (!token || !spaceName) return [];
     try {
       const url = `https://chat.googleapis.com/v1/${spaceName}/messages?access_token=${encodeURIComponent(token)}&pageSize=100`;
-      const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
+      const proxyUrl = `https://corsproxy.io/?url=${encodeURIComponent(url)}`;
       const res = await fetch(proxyUrl);
       if (!res.ok) throw new Error(`HTTP error ${res.status}`);
       const data = await res.json();
@@ -841,7 +841,7 @@ class DBClient {
     if (!token || !spaceName || !content.trim()) return null;
     try {
       const url = `https://chat.googleapis.com/v1/${spaceName}/messages?access_token=${encodeURIComponent(token)}`;
-      const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
+      const proxyUrl = `https://corsproxy.io/?url=${encodeURIComponent(url)}`;
       const res = await fetch(proxyUrl, {
         method: 'POST',
         headers: {

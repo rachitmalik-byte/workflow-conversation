@@ -267,28 +267,35 @@ const MainAppContent: React.FC = () => {
     }, 4000);
   };
 
-  const checkDueReminders = async () => {
+  const allRemindersRef = useRef<Reminder[]>([]);
+
+  const fetchReminders = async () => {
     if (!currentUser) return;
     try {
-      const allReminders = await dbClient.getReminders();
-      const now = Date.now();
-      const due = allReminders.filter(
-        (r) => r.status === 'active' && new Date(r.reminder_time).getTime() <= now
-      );
-      
-      // If there is a new due reminder that wasn't in our previous list, trigger toast!
-      if (due.length > dueRemindersRef.current.length) {
-        const newDue = due.filter(r => !dueRemindersRef.current.some(dr => dr.id === r.id));
-        newDue.forEach(r => {
-          addToast('⚠️ Alarm Triggered!', r.title, 'danger', r.id);
-        });
-      }
-      
-      dueRemindersRef.current = due;
-      setDueReminders(due);
+      const data = await dbClient.getReminders();
+      allRemindersRef.current = data;
+      localCheckDueReminders();
     } catch (err) {
-      console.error('Reminder check error:', err);
+      console.error('Failed to fetch reminders:', err);
     }
+  };
+
+  const localCheckDueReminders = () => {
+    if (!currentUser) return;
+    const now = Date.now();
+    const due = allRemindersRef.current.filter(
+      (r) => r.status === 'active' && new Date(r.reminder_time).getTime() <= now
+    );
+    
+    if (due.length > dueRemindersRef.current.length) {
+      const newDue = due.filter(r => !dueRemindersRef.current.some(dr => dr.id === r.id));
+      newDue.forEach(r => {
+        addToast('⚠️ Alarm Triggered!', r.title, 'danger', r.id);
+      });
+    }
+    
+    dueRemindersRef.current = due;
+    setDueReminders(due);
   };
 
   // Request browser desktop notification permissions on mount
@@ -482,9 +489,9 @@ const MainAppContent: React.FC = () => {
   }, [currentView]);
 
   useEffect(() => {
-    checkDueReminders();
+    fetchReminders();
     const interval = setInterval(() => {
-      checkDueReminders();
+      localCheckDueReminders();
       // Periodic check for presence override expiration
       const mode = localStorage.getItem('relayhq_presence_mode') || 'automatic';
       if (mode === 'manual') {
@@ -504,7 +511,7 @@ const MainAppContent: React.FC = () => {
 
     const unsubscribe = dbClient.subscribe((table, type, payload) => {
       if (table === 'reminders') {
-        checkDueReminders();
+        fetchReminders();
         if (type === 'insert' && payload.creator_id !== currentUser?.id) {
           const isInvited = payload.invited_users?.includes(currentUser?.id);
           if (isInvited || currentUser?.role === 'head') {
@@ -676,7 +683,7 @@ const MainAppContent: React.FC = () => {
   const handleDismissAlarm = async (id: string) => {
     try {
       await dbClient.updateReminder(id, { status: 'dismissed' });
-      checkDueReminders();
+      fetchReminders();
     } catch (err) {
       console.error(err);
     }
@@ -689,7 +696,7 @@ const MainAppContent: React.FC = () => {
         reminder_time: snoozeTime,
         status: 'active' 
       });
-      checkDueReminders();
+      fetchReminders();
       addToast('⏰ Alarm Snoozed', `Snoozed for ${snoozeMinutes} minutes.`, 'info');
     } catch (err) {
       console.error(err);
