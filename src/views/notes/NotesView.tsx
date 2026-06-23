@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { dbClient } from '../../services/dbClient';
 import { useAuth } from '../../context/AuthContext';
+import { useTheme } from '../../context/ThemeContext';
 import type { PersonalNote, NoteCategory, Lead } from '../../types/database';
 import {
   Plus, Trash2, FileText, ChevronRight, Save, Sparkles,
@@ -75,8 +76,91 @@ const HIGHLIGHT_COLORS = [
   { name: 'Orange', value: '#fed7aa' }
 ];
 
+const sanitizeHtmlForPaste = (html: string, isDarkMode: boolean): string => {
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(html, 'text/html');
+  
+  const allElements = doc.querySelectorAll('*');
+  allElements.forEach((el) => {
+    const styleAttr = el.getAttribute('style');
+    if (styleAttr) {
+      const styles = styleAttr.split(';').map(s => s.trim()).filter(Boolean);
+      const cleanedStyles = styles.filter((style) => {
+        const parts = style.split(':');
+        const prop = parts[0]?.trim().toLowerCase();
+        const val = parts.slice(1).join(':').trim().toLowerCase();
+        if (!prop || !val) return false;
+        
+        // Remove background styling to prevent ugly block backgrounds
+        if (prop === 'background-color' || prop === 'background') {
+          return false;
+        }
+        
+        // Remove color styling if it conflicts with readability in current theme
+        if (prop === 'color') {
+          if (isDarkMode) {
+            // Strip out dark colors in dark mode (black, dark grays, dark blues, etc.)
+            const isDarkColor = val === 'black' || 
+              /^(#000|#111|#222|#333|#000000|#1f1f1f|#212529|#374151|#1e293b|#0f172a)/.test(val) ||
+              /rgb\(\s*0\s*,\s*0\s*,\s*0\s*\)/.test(val) ||
+              /rgb\(\s*31\s*,\s*31\s*,\s*31\s*\)/.test(val) ||
+              /rgba?\(\s*\d+\s*,\s*\d+\s*,\s*\d+\s*(,\s*[0-9.]+\s*)?\)/.test(val) && (
+                (() => {
+                  const m = val.match(/\d+/g);
+                  if (m && m.length >= 3) {
+                    const r = parseInt(m[0], 10);
+                    const g = parseInt(m[1], 10);
+                    const b = parseInt(m[2], 10);
+                    return (r * 299 + g * 587 + b * 114) / 1000 < 120; // dark color threshold
+                  }
+                  return false;
+                })()
+              );
+            return !isDarkColor;
+          } else {
+            // Strip out white or very light colors in light mode
+            const isLightColor = val === 'white' || 
+              /^(#fff|#eee|#ddd|#f8f9fa|#ffffff|#f3f4f6|#e5e7eb)/.test(val) ||
+              /rgb\(\s*255\s*,\s*255\s*,\s*255\s*\)/.test(val) ||
+              /rgba?\(\s*\d+\s*,\s*\d+\s*,\s*\d+\s*(,\s*[0-9.]+\s*)?\)/.test(val) && (
+                (() => {
+                  const m = val.match(/\d+/g);
+                  if (m && m.length >= 3) {
+                    const r = parseInt(m[0], 10);
+                    const g = parseInt(m[1], 10);
+                    const b = parseInt(m[2], 10);
+                    return (r * 299 + g * 587 + b * 114) / 1000 > 180; // light color threshold
+                  }
+                  return false;
+                })()
+              );
+            return !isLightColor;
+          }
+        }
+        return true;
+      });
+      
+      if (cleanedStyles.length > 0) {
+        el.setAttribute('style', cleanedStyles.join('; ') + ';');
+      } else {
+        el.removeAttribute('style');
+      }
+    }
+    
+    // Clean old font tags
+    if (el.tagName.toLowerCase() === 'font') {
+      el.removeAttribute('color');
+      el.removeAttribute('face');
+      el.removeAttribute('size');
+    }
+  });
+
+  return doc.body.innerHTML;
+};
+
 export const NotesView: React.FC = () => {
   const { currentUser } = useAuth();
+  const { themeMode } = useTheme();
   const [notes, setNotes] = useState<PersonalNote[]>([]);
   const [leads, setLeads] = useState<Lead[]>([]);
   const [selectedNote, setSelectedNote] = useState<PersonalNote | null>(null);
@@ -208,6 +292,54 @@ export const NotesView: React.FC = () => {
     }
     handleEditorInput();
     setOpenMenu(null);
+  };
+
+  const handlePaste = (e: React.ClipboardEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    const html = e.clipboardData.getData('text/html');
+    const text = e.clipboardData.getData('text/plain');
+
+    let contentToInsert = '';
+
+    if (html) {
+      contentToInsert = sanitizeHtmlForPaste(html, themeMode === 'dark');
+    } else if (text) {
+      contentToInsert = text
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/\n/g, '<br>');
+    }
+
+    if (contentToInsert) {
+      const selection = window.getSelection();
+      if (!selection || !selection.rangeCount) return;
+      
+      const range = selection.getRangeAt(0);
+      range.deleteContents();
+
+      const el = document.createElement('div');
+      el.innerHTML = contentToInsert;
+      
+      const frag = document.createDocumentFragment();
+      let node;
+      let lastNode;
+      while ((node = el.firstChild)) {
+        lastNode = frag.appendChild(node);
+      }
+      
+      range.insertNode(frag);
+      
+      if (lastNode) {
+        const newRange = range.cloneRange();
+        newRange.setStartAfter(lastNode);
+        newRange.collapse(true);
+        selection.removeAllRanges();
+        selection.addRange(newRange);
+      }
+      
+      handleEditorInput();
+    }
   };
 
   const categories: { value: string; label: string }[] = [
@@ -631,6 +763,7 @@ export const NotesView: React.FC = () => {
                 ref={editorRef}
                 contentEditable
                 onInput={handleEditorInput}
+                onPaste={handlePaste}
                 {...{ placeholder: "Start writing sales template, playbooks, or call scripts..." }}
                 className="flex-1 w-full p-4 bg-transparent text-foreground text-xs sm:text-sm focus:outline-none overflow-y-auto leading-relaxed font-sans editor-content"
                 style={{ outline: 'none' }}
