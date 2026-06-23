@@ -149,8 +149,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
           className="flex h-14 items-center border-b border-border flex-shrink-0 overflow-hidden"
           style={{ paddingLeft: isExpanded ? '16px' : '0', paddingRight: isExpanded ? '12px' : '0', justifyContent: isExpanded ? 'space-between' : 'center', transition: 'padding 220ms cubic-bezier(0.4, 0, 0.2, 1)' }}
         >
-          <div className="flex items-center gap-2.5 min-w-0">
-            <img src="/logo.png" className="h-8 w-8 flex-shrink-0 object-contain rounded-lg shadow-sm" alt="RelayHQ" />
+          <div className="flex items-center min-w-0" style={{ gap: isExpanded ? '10px' : '0' }}>
+            <img src="/logo.svg" className="h-8 w-8 flex-shrink-0 object-contain rounded-lg shadow-sm" alt="RelayHQ" />
             <span
               className="text-sm font-extrabold text-foreground tracking-tight whitespace-nowrap overflow-hidden"
               style={{ opacity: isExpanded ? 1 : 0, maxWidth: isExpanded ? '120px' : '0', transition: 'opacity 180ms ease, max-width 220ms cubic-bezier(0.4,0,0.2,1)' }}
@@ -319,25 +319,32 @@ export const Sidebar: React.FC<SidebarProps> = ({
           )}
 
           {/* Avatar + info row */}
-          <div className="flex items-center min-w-0" style={{ justifyContent: isExpanded ? 'flex-start' : 'center', gap: isExpanded ? '10px' : '0' }}>
-            {/* Avatar */}
-            <div
-              className="flex-shrink-0 h-8 w-8 rounded-full bg-primary/15 text-primary font-bold text-xs flex items-center justify-center cursor-default select-none ring-2 ring-primary/20"
-              title={!isExpanded ? `${currentUser?.full_name} · ${currentUser?.role === 'head' ? 'Head' : 'Specialist'}` : undefined}
+          <div className="flex items-center min-w-0 w-full" style={{ justifyContent: isExpanded ? 'flex-start' : 'center', gap: isExpanded ? '10px' : '0' }}>
+            {/* Clickable Profile Info */}
+            <button
+              onClick={() => onNavigate('settings')}
+              className="flex items-center min-w-0 text-left hover:opacity-80 transition-opacity cursor-pointer focus:outline-none"
+              style={{ gap: isExpanded ? '10px' : '0' }}
+              title={!isExpanded ? `${currentUser?.full_name} · ${currentUser?.role === 'head' ? 'Head' : 'Specialist'} (Click to view profile)` : 'View profile settings'}
             >
-              {currentUser?.full_name?.split(' ').map((n) => n[0]).join('').slice(0, 2)}
-            </div>
+              {/* Avatar */}
+              <div
+                className="flex-shrink-0 h-8 w-8 rounded-full bg-primary/15 text-primary font-bold text-xs flex items-center justify-center select-none ring-2 ring-primary/20"
+              >
+                {currentUser?.full_name?.split(' ').map((n) => n[0]).join('').slice(0, 2)}
+              </div>
 
-            {/* Name + role */}
-            <div
-              className="min-w-0 overflow-hidden"
-              style={{ opacity: isExpanded ? 1 : 0, maxWidth: isExpanded ? '140px' : '0', transition: 'opacity 160ms ease, max-width 220ms cubic-bezier(0.4,0,0.2,1)' }}
-            >
-              <p className="text-xs font-semibold text-foreground truncate leading-tight">{currentUser?.full_name}</p>
-              <p className="text-[9px] text-muted-foreground uppercase tracking-wide font-medium mt-0.5">
-                {currentUser?.role === 'head' ? '👑 Head' : '💼 Specialist'}
-              </p>
-            </div>
+              {/* Name + role */}
+              <div
+                className="min-w-0 overflow-hidden"
+                style={{ opacity: isExpanded ? 1 : 0, maxWidth: isExpanded ? '140px' : '0', transition: 'opacity 160ms ease, max-width 220ms cubic-bezier(0.4,0,0.2,1)' }}
+              >
+                <p className="text-xs font-semibold text-foreground truncate leading-tight">{currentUser?.full_name}</p>
+                <p className="text-[9px] text-muted-foreground uppercase tracking-wide font-medium mt-0.5">
+                  {currentUser?.role === 'head' ? '👑 Head' : '💼 Specialist'}
+                </p>
+              </div>
+            </button>
 
             {/* Logout icon - always visible when expanded */}
             {isExpanded && (
