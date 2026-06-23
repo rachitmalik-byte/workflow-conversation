@@ -41,6 +41,7 @@ interface AuthContextType {
   isSimulator: boolean;
   bypassAuth: () => Promise<void>;
   signOutUser: () => Promise<void>;
+  updateCurrentUserProfile: (updates: Partial<Profile>) => Promise<void>;
   isDeveloper: boolean;
   isAdmin: boolean;
   googleAccessToken: string;
@@ -580,6 +581,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setIsLoading(false);
   };
 
+  const updateCurrentUserProfile = async (updates: Partial<Profile>) => {
+    if (!currentUser) return;
+    try {
+      const updated = await dbClient.updateProfile(currentUser.id, updates);
+      setCurrentUser(updated);
+      const allProfiles = await dbClient.getProfiles();
+      setProfiles([...allProfiles]);
+    } catch (err) {
+      console.error('Failed to update current user profile:', err);
+      throw err;
+    }
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -590,6 +604,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         isSimulator,
         bypassAuth,
         signOutUser,
+        updateCurrentUserProfile,
         isDeveloper,
         isAdmin,
         googleAccessToken,

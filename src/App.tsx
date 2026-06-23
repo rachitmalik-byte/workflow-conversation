@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
+import { ProfileSetupModal } from './components/auth/ProfileSetupModal';
 import { Sidebar } from './components/layout/Sidebar';
 import { Header } from './components/layout/Header';
 import { ErrorBoundary } from './components/ui/ErrorBoundary';
@@ -35,7 +36,7 @@ const getAudioCtx = () => {
 };
 
 const MainAppContent: React.FC = () => {
-  const { currentUser, profiles, isLoading, bypassAuth } = useAuth();
+  const { currentUser, profiles, isLoading, bypassAuth, updateCurrentUserProfile, signOutUser, isSimulator } = useAuth();
   
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
   const [isShortcutsGuideOpen, setIsShortcutsGuideOpen] = useState(false);
@@ -713,6 +714,20 @@ const MainAppContent: React.FC = () => {
   }
   if (!currentUser) {
     return <AuthPage onBypass={bypassAuth} onSuccess={() => {}} />;
+  }
+
+  // Google Sign-In profile setup trigger (when designation is empty/not set yet)
+  const needsProfileSetup = currentUser && !currentUser.designation && !isSimulator;
+  if (needsProfileSetup) {
+    return (
+      <ProfileSetupModal
+        currentUser={currentUser}
+        onComplete={async (updates) => {
+          await updateCurrentUserProfile(updates);
+        }}
+        onSignOut={signOutUser}
+      />
+    );
   }
   // Resolve active views
   const renderView = () => {

@@ -22,6 +22,15 @@ class DBClient {
     const { data: { user } } = await client.auth.getUser();
     if (!user) throw new Error('No user authenticated');
 
+    const emailLower = user.email?.toLowerCase() || '';
+    const headEmails = [
+      'sumit.kushwah@vaidikedu.com',
+      'sumit.kushwah@vaidikedu.in',
+      'mahima.gupta@vaidikedu.com',
+      'mahima.gupta@vaidikedu.in'
+    ];
+    const isHead = headEmails.includes(emailLower);
+
     const { data, error } = await client.from('profiles').select('*').eq('id', user.id).single();
     if (error || !data) {
       // Fallback: create profile if authenticated but missing profile record
@@ -29,14 +38,33 @@ class DBClient {
         id: user.id,
         full_name: user.email?.split('@')[0] || 'Teammate',
         email: user.email || '',
-        role: 'growth_specialist',
+        role: isHead ? 'head' : 'growth_specialist',
         status: 'active',
+        designation: isHead ? 'Department Head' : '', // Empty designation triggers role/designation setup for Google sign-in
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       };
       await client.from('profiles').insert(newProfile);
       return newProfile;
     }
+
+    // Auto-assign head role and designation for specific emails if not already set correctly
+    if (isHead && (data.role !== 'head' || !data.designation)) {
+      const updates: Partial<Profile> = {};
+      if (data.role !== 'head') updates.role = 'head';
+      if (!data.designation) updates.designation = 'Department Head';
+      
+      const { data: updated, error: updError } = await client
+        .from('profiles')
+        .update(updates)
+        .eq('id', user.id)
+        .select()
+        .single();
+      if (!updError && updated) {
+        return updated;
+      }
+    }
+
     return data;
   }
 
