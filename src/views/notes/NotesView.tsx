@@ -181,6 +181,11 @@ export const NotesView: React.FC = () => {
   const [currentFont, setCurrentFont] = useState('Inter');
   const [currentSize, setCurrentSize] = useState('16px');
 
+  const selectedNoteRef = useRef<PersonalNote | null>(null);
+  useEffect(() => {
+    selectedNoteRef.current = selectedNote;
+  }, [selectedNote]);
+
   const fetchNotesAndLeads = async () => {
     const data = await dbClient.getPersonalNotes();
     setNotes(data);
@@ -189,7 +194,7 @@ export const NotesView: React.FC = () => {
     setLeads(leadsData);
 
     // Default select first note if none selected and notes exist
-    if (data.length > 0 && !selectedNote) {
+    if (data.length > 0 && !selectedNoteRef.current) {
       handleSelectNote(data[0]);
     }
   };
@@ -255,9 +260,11 @@ export const NotesView: React.FC = () => {
       await fetchNotesAndLeads();
       setSelectedNote(updated);
       setSuccessMsg(true);
+      triggerConfetti();
       setTimeout(() => setSuccessMsg(false), 2000);
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
+      alert(err.message || 'Failed to save scratch note.');
     }
   };
 
@@ -786,4 +793,74 @@ export const NotesView: React.FC = () => {
       </div>
     </div>
   );
+};
+
+const triggerConfetti = () => {
+  const canvas = document.createElement('canvas');
+  canvas.style.position = 'fixed';
+  canvas.style.top = '0';
+  canvas.style.left = '0';
+  canvas.style.width = '100%';
+  canvas.style.height = '100%';
+  canvas.style.pointerEvents = 'none';
+  canvas.style.zIndex = '9999';
+  document.body.appendChild(canvas);
+
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return;
+
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+
+  const particles: any[] = [];
+  const colors = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
+
+  for (let i = 0; i < 150; i++) {
+    particles.push({
+      x: Math.random() * canvas.width,
+      y: Math.random() * canvas.height - canvas.height,
+      r: Math.random() * 6 + 4,
+      d: Math.random() * canvas.height,
+      color: colors[Math.floor(Math.random() * colors.length)],
+      tilt: Math.random() * 10 - 5,
+      tiltAngleIncremental: Math.random() * 0.07 + 0.02,
+      tiltAngle: 0,
+    });
+  }
+
+  const draw = () => {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    let remaining = 0;
+
+    particles.forEach((p) => {
+      p.tiltAngle += p.tiltAngleIncremental;
+      p.y += (Math.cos(p.d) + 3 + p.r / 2) / 2;
+      p.x += Math.sin(p.tiltAngle);
+      p.tilt = Math.sin(p.tiltAngle - p.r / 2) * 5;
+
+      if (p.y <= canvas.height) {
+        remaining++;
+      }
+
+      ctx.beginPath();
+      ctx.lineWidth = p.r;
+      ctx.strokeStyle = p.color;
+      ctx.moveTo(p.x + p.tilt + p.r / 2, p.y);
+      ctx.lineTo(p.x + p.tilt, p.y + p.tilt + p.r / 2);
+      ctx.stroke();
+    });
+
+    if (remaining > 0) {
+      requestAnimationFrame(draw);
+    } else {
+      document.body.removeChild(canvas);
+    }
+  };
+
+  draw();
+
+  window.addEventListener('resize', () => {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+  });
 };

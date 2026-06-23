@@ -184,6 +184,7 @@ export const DetailPage: React.FC<DetailPageProps> = ({ leadId, onNavigate }) =>
       if (field === 'notes') { setSavedNotes(true); setTimeout(() => setSavedNotes(false), 2000); }
       if (field === 'reply_received') { setSavedReply(true); setTimeout(() => setSavedReply(false), 2000); }
       if (field === 'proposal_sent') { setSavedProposal(true); setTimeout(() => setSavedProposal(false), 2000); }
+      triggerConfetti();
       await fetchLeadData();
     } catch (err: any) {
       alert(err.message || `Failed to save ${field}`);
@@ -663,7 +664,12 @@ export const DetailPage: React.FC<DetailPageProps> = ({ leadId, onNavigate }) =>
                       <span className="font-bold text-foreground">{note.title}</span>
                       <span className="text-[9px] bg-primary/10 text-primary px-1.5 py-0.5 rounded font-bold">{note.category.replace('_', ' ')}</span>
                     </div>
-                    {note.content && <p className="text-muted-foreground text-[11px] whitespace-pre-wrap leading-relaxed">{note.content}</p>}
+                    {note.content && (
+                      <div 
+                        className="text-muted-foreground text-[11px] leading-relaxed mt-1.5 editor-content whitespace-normal"
+                        dangerouslySetInnerHTML={{ __html: note.content }}
+                      />
+                    )}
                   </div>
                 ))}
               </div>

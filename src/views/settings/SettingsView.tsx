@@ -157,7 +157,16 @@ const playSynthAlarm = (sound: string) => {
 
 export const SettingsView: React.FC = () => {
   const { currentUser, profiles, switchUser, isDeveloper, isAdmin } = useAuth();
-  const { themePreset, setThemePreset, themeMode, setThemeMode, fontFamily, setFontFamily, colorScheme, setColorScheme, bgStyle, setBgStyle } = useTheme();
+  const {
+    themePreset, setThemePreset,
+    themeMode, setThemeMode,
+    fontFamily, setFontFamily,
+    colorScheme, setColorScheme,
+    bgStyle, setBgStyle,
+    customPrimary, setCustomPrimary,
+    customBg, setCustomBg,
+    customCard, setCustomCard
+  } = useTheme();
   const [activeTab, setActiveTab] = useState<TabType>('profile');
 
   const hasOnboardAccess = isAdmin;
@@ -733,6 +742,151 @@ export const SettingsView: React.FC = () => {
                         >
                           🌙 Dark
                         </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Custom Color scale customization box */}
+                  <div className="mt-4 pt-4 border-t border-border/50 space-y-3">
+                    <label className="block text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">
+                      🎨 Custom Color Customization (Click scales or pick custom hex)
+                    </label>
+                    <p className="text-[10px] text-muted-foreground leading-normal max-w-xl">
+                      Design your own custom color scheme by selecting a color block from the scale boxes below. You can also pick a custom hex color. Clear a custom scale by clicking the (✕) box.
+                    </p>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-5 pt-1">
+                      {/* Primary / Accent Element Color */}
+                      <div className="space-y-2">
+                        <span className="block text-[10px] font-bold text-foreground/80">
+                          Primary / Accent Theme Color
+                        </span>
+                        <div className="flex flex-wrap gap-1.5 items-center">
+                          <button
+                            type="button"
+                            onClick={() => setCustomPrimary('')}
+                            className={`h-5 w-5 rounded-full border border-border/80 flex items-center justify-center cursor-pointer transition-all hover:scale-110 active:scale-95 ${!customPrimary ? 'ring-2 ring-primary ring-offset-2 ring-offset-background' : ''}`}
+                            title="Reset to default primary"
+                          >
+                            <span className="text-[9px] font-bold opacity-60">✕</span>
+                          </button>
+                          {[
+                            { hex: '#3b82f6', name: 'Blue' },
+                            { hex: '#10b981', name: 'Green' },
+                            { hex: '#f97316', name: 'Orange' },
+                            { hex: '#8b5cf6', name: 'Purple' },
+                            { hex: '#ef4444', name: 'Red' },
+                            { hex: '#ec4899', name: 'Pink' },
+                            { hex: '#f59e0b', name: 'Gold' }
+                          ].map(color => (
+                            <button
+                              key={color.hex}
+                              type="button"
+                              onClick={() => setCustomPrimary(color.hex)}
+                              style={{ backgroundColor: color.hex }}
+                              className={`h-5 w-5 rounded-full border border-border/40 cursor-pointer transition-all hover:scale-110 active:scale-95 ${customPrimary === color.hex ? 'ring-2 ring-primary ring-offset-2 ring-offset-background' : ''}`}
+                              title={color.name}
+                            />
+                          ))}
+                          <div className="relative h-6 w-8 flex items-center justify-center border border-border rounded overflow-hidden bg-muted/40 cursor-pointer hover:bg-muted/70 transition-colors">
+                            <input
+                              type="color"
+                              value={customPrimary || '#3b82f6'}
+                              onChange={(e) => setCustomPrimary(e.target.value)}
+                              className="absolute inset-0 opacity-0 w-full h-full cursor-pointer"
+                              title="Pick Custom Accent"
+                            />
+                            <span className="text-[10px] font-bold text-foreground pointer-events-none">🎨</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Background Color */}
+                      <div className="space-y-2">
+                        <span className="block text-[10px] font-bold text-foreground/80">
+                          Workspace Background Color
+                        </span>
+                        <div className="flex flex-wrap gap-1.5 items-center">
+                          <button
+                            type="button"
+                            onClick={() => setCustomBg('')}
+                            className={`h-5 w-5 rounded-full border border-border/80 flex items-center justify-center cursor-pointer transition-all hover:scale-110 active:scale-95 ${!customBg ? 'ring-2 ring-primary ring-offset-2 ring-offset-background' : ''}`}
+                            title="Reset to default background"
+                          >
+                            <span className="text-[9px] font-bold opacity-60">✕</span>
+                          </button>
+                          {[
+                            { hex: '#f8f9fa', name: 'Pure Light' },
+                            { hex: '#faf6f0', name: 'Warm Cream' },
+                            { hex: '#f0f4f1', name: 'Sage Green' },
+                            { hex: '#f2f1fa', name: 'Lavender' },
+                            { hex: '#09090b', name: 'Clean Dark' },
+                            { hex: '#0d1117', name: 'Navy Space' },
+                            { hex: '#0a0f0d', name: 'Forest Dark' }
+                          ].map(color => (
+                            <button
+                              key={color.hex}
+                              type="button"
+                              onClick={() => setCustomBg(color.hex)}
+                              style={{ backgroundColor: color.hex }}
+                              className={`h-5 w-5 rounded-full border border-border/40 cursor-pointer transition-all hover:scale-110 active:scale-95 ${customBg === color.hex ? 'ring-2 ring-primary ring-offset-2 ring-offset-background' : ''}`}
+                              title={color.name}
+                            />
+                          ))}
+                          <div className="relative h-6 w-8 flex items-center justify-center border border-border rounded overflow-hidden bg-muted/40 cursor-pointer hover:bg-muted/70 transition-colors">
+                            <input
+                              type="color"
+                              value={customBg || '#f3f4f6'}
+                              onChange={(e) => setCustomBg(e.target.value)}
+                              className="absolute inset-0 opacity-0 w-full h-full cursor-pointer"
+                              title="Pick Custom Background"
+                            />
+                            <span className="text-[10px] font-bold text-foreground pointer-events-none">🎨</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Card / Element Background */}
+                      <div className="space-y-2">
+                        <span className="block text-[10px] font-bold text-foreground/80">
+                          Card & UI Element Background
+                        </span>
+                        <div className="flex flex-wrap gap-1.5 items-center">
+                          <button
+                            type="button"
+                            onClick={() => setCustomCard('')}
+                            className={`h-5 w-5 rounded-full border border-border/80 flex items-center justify-center cursor-pointer transition-all hover:scale-110 active:scale-95 ${!customCard ? 'ring-2 ring-primary ring-offset-2 ring-offset-background' : ''}`}
+                            title="Reset to default card"
+                          >
+                            <span className="text-[9px] font-bold opacity-60">✕</span>
+                          </button>
+                          {[
+                            { hex: '#ffffff', name: 'White' },
+                            { hex: '#fdfcfb', name: 'Ivory' },
+                            { hex: '#ebedea', name: 'Sage Slate' },
+                            { hex: '#18181b', name: 'Zinc Dark' },
+                            { hex: '#161b22', name: 'Midnight Card' }
+                          ].map(color => (
+                            <button
+                              key={color.hex}
+                              type="button"
+                              onClick={() => setCustomCard(color.hex)}
+                              style={{ backgroundColor: color.hex }}
+                              className={`h-5 w-5 rounded-full border border-border/40 cursor-pointer transition-all hover:scale-110 active:scale-95 ${customCard === color.hex ? 'ring-2 ring-primary ring-offset-2 ring-offset-background' : ''}`}
+                              title={color.name}
+                            />
+                          ))}
+                          <div className="relative h-6 w-8 flex items-center justify-center border border-border rounded overflow-hidden bg-muted/40 cursor-pointer hover:bg-muted/70 transition-colors">
+                            <input
+                              type="color"
+                              value={customCard || '#ffffff'}
+                              onChange={(e) => setCustomCard(e.target.value)}
+                              className="absolute inset-0 opacity-0 w-full h-full cursor-pointer"
+                              title="Pick Custom Card Color"
+                            />
+                            <span className="text-[10px] font-bold text-foreground pointer-events-none">🎨</span>
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </div>

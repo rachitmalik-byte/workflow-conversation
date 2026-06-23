@@ -229,7 +229,7 @@ export const RemindersView: React.FC = () => {
   // Calendar Day cell builder
   const getDaysInMonth = (year: number, month: number) => {
     const date = new Date(year, month, 1);
-    const days = [];
+    const days: { date: Date; isCurrentMonth: boolean }[] = [];
     
     const startDayOfWeek = date.getDay();
     const prevMonthDate = new Date(year, month, 0);

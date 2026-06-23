@@ -614,7 +614,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
     const daysInMonth = new Date(year, month + 1, 0).getDate();
     const startDay = new Date(year, month, 1).getDay();
 
-    const calendarGrid = [];
+    const calendarGrid: (number | null)[] = [];
     // Padding
     for (let i = 0; i < startDay; i++) calendarGrid.push(null);
     // Days

@@ -495,6 +495,8 @@ const MOCK_NOTIFICATIONS: Notification[] = [
 class MemoryDB {
   profiles = (() => {
     try {
+      const stored = localStorage.getItem('relayhq_profiles');
+      if (stored) return JSON.parse(stored);
       const deletedRaw = localStorage.getItem('relayhq_deleted_profiles');
       const deletedIds = deletedRaw ? JSON.parse(deletedRaw) : [];
       return MOCK_PROFILES.filter(p => !deletedIds.includes(p.id) && p.email?.toLowerCase() !== 'arjab.jain@englivo.com');
@@ -502,36 +504,115 @@ class MemoryDB {
       return MOCK_PROFILES.filter(p => p.email?.toLowerCase() !== 'arjab.jain@englivo.com');
     }
   })();
-  leads = [...MOCK_LEADS];
-  leadUpdates = [...MOCK_LEAD_UPDATES];
-  leadAttachments = [...MOCK_LEAD_ATTACHMENTS];
-  tasks = [...MOCK_TASKS];
-  reminders = [...MOCK_REMINDERS];
-  channels = [...MOCK_CHANNELS];
-  messages = [...MOCK_MESSAGES];
-  notifications = [...MOCK_NOTIFICATIONS];
-  
-  personalNotes: PersonalNote[] = [
-    {
-      id: 'note-1',
-      title: 'US Enterprise Tech - Cold Email Template',
-      content: 'Hi {{prospect_name}},\n\nNoticed you are scaling up the outbound growth team at {{company_name}}. We built a workflow execution engine called RelayHQ that saves reps 2.5 hours per day on CRM updates.\n\nWould you be open to a 10-minute sync this Thursday?\n\nBest,\n{{sender_name}}',
-      category: 'email_template',
-      creator_id: 'specialist-1',
-      created_at: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
-      updated_at: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
-    },
-    {
-      id: 'note-2',
-      title: 'Pepper Potts follow up call script',
-      content: '1. Re-pitch customized SLA terms.\n2. Address contract clause 4.2 details regarding lead generation volumes.\n3. Offer 5% discount on quarterly retainer pilot if signed before Q3.',
-      category: 'call_script',
-      lead_id: 'lead-2',
-      creator_id: 'specialist-1',
-      created_at: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-      updated_at: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
+  leads = (() => {
+    try {
+      const stored = localStorage.getItem('relayhq_leads');
+      return stored ? JSON.parse(stored) : [...MOCK_LEADS];
+    } catch {
+      return [...MOCK_LEADS];
     }
-  ];
+  })();
+  leadUpdates = (() => {
+    try {
+      const stored = localStorage.getItem('relayhq_lead_updates');
+      return stored ? JSON.parse(stored) : [...MOCK_LEAD_UPDATES];
+    } catch {
+      return [...MOCK_LEAD_UPDATES];
+    }
+  })();
+  leadAttachments = (() => {
+    try {
+      const stored = localStorage.getItem('relayhq_lead_attachments');
+      return stored ? JSON.parse(stored) : [...MOCK_LEAD_ATTACHMENTS];
+    } catch {
+      return [...MOCK_LEAD_ATTACHMENTS];
+    }
+  })();
+  tasks = (() => {
+    try {
+      const stored = localStorage.getItem('relayhq_tasks');
+      return stored ? JSON.parse(stored) : [...MOCK_TASKS];
+    } catch {
+      return [...MOCK_TASKS];
+    }
+  })();
+  reminders = (() => {
+    try {
+      const stored = localStorage.getItem('relayhq_reminders');
+      return stored ? JSON.parse(stored) : [...MOCK_REMINDERS];
+    } catch {
+      return [...MOCK_REMINDERS];
+    }
+  })();
+  channels = (() => {
+    try {
+      const stored = localStorage.getItem('relayhq_channels');
+      return stored ? JSON.parse(stored) : [...MOCK_CHANNELS];
+    } catch {
+      return [...MOCK_CHANNELS];
+    }
+  })();
+  messages = (() => {
+    try {
+      const stored = localStorage.getItem('relayhq_messages');
+      return stored ? JSON.parse(stored) : [...MOCK_MESSAGES];
+    } catch {
+      return [...MOCK_MESSAGES];
+    }
+  })();
+  notifications = (() => {
+    try {
+      const stored = localStorage.getItem('relayhq_notifications');
+      return stored ? JSON.parse(stored) : [...MOCK_NOTIFICATIONS];
+    } catch {
+      return [...MOCK_NOTIFICATIONS];
+    }
+  })();
+  
+  personalNotes: PersonalNote[] = (() => {
+    try {
+      const stored = localStorage.getItem('relayhq_personal_notes');
+      if (stored) return JSON.parse(stored);
+    } catch {}
+    return [
+      {
+        id: 'note-1',
+        title: 'US Enterprise Tech - Cold Email Template',
+        content: 'Hi {{prospect_name}},\n\nNoticed you are scaling up the outbound growth team at {{company_name}}. We built a workflow execution engine called RelayHQ that saves reps 2.5 hours per day on CRM updates.\n\nWould you be open to a 10-minute sync this Thursday?\n\nBest,\n{{sender_name}}',
+        category: 'email_template',
+        creator_id: 'specialist-1',
+        created_at: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
+        updated_at: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
+      },
+      {
+        id: 'note-2',
+        title: 'Pepper Potts follow up call script',
+        content: '1. Re-pitch customized SLA terms.\n2. Address contract clause 4.2 details regarding lead generation volumes.\n3. Offer 5% discount on quarterly retainer pilot if signed before Q3.',
+        category: 'call_script',
+        lead_id: 'lead-2',
+        creator_id: 'specialist-1',
+        created_at: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
+        updated_at: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
+      }
+    ];
+  })();
+
+  persist(table: string) {
+    try {
+      if (table === 'profiles') localStorage.setItem('relayhq_profiles', JSON.stringify(this.profiles));
+      if (table === 'leads') localStorage.setItem('relayhq_leads', JSON.stringify(this.leads));
+      if (table === 'lead_updates') localStorage.setItem('relayhq_lead_updates', JSON.stringify(this.leadUpdates));
+      if (table === 'lead_attachments') localStorage.setItem('relayhq_lead_attachments', JSON.stringify(this.leadAttachments));
+      if (table === 'tasks') localStorage.setItem('relayhq_tasks', JSON.stringify(this.tasks));
+      if (table === 'reminders') localStorage.setItem('relayhq_reminders', JSON.stringify(this.reminders));
+      if (table === 'channels') localStorage.setItem('relayhq_channels', JSON.stringify(this.channels));
+      if (table === 'messages') localStorage.setItem('relayhq_messages', JSON.stringify(this.messages));
+      if (table === 'notifications') localStorage.setItem('relayhq_notifications', JSON.stringify(this.notifications));
+      if (table === 'personal_notes') localStorage.setItem('relayhq_personal_notes', JSON.stringify(this.personalNotes));
+    } catch (e) {
+      console.error('Error persisting table ' + table + ' to localStorage:', e);
+    }
+  }
 
   supabaseUrl = '';
   supabaseKey = '';
@@ -618,6 +699,7 @@ class MemoryDB {
       assigned_users: Array.from(new Set([userId, ...(leadData.assigned_users || [])]))
     };
     this.leads.unshift(newLead);
+    this.persist('leads');
     
     // Auto-create log/update
     this.createLeadUpdate(newLead.id, userId, 'Project was created.');
@@ -662,6 +744,7 @@ class MemoryDB {
     }
 
     this.leads[idx] = updatedLead;
+    this.persist('leads');
 
     // Detect status changes to write an automatic progress update
     if (leadData.status && leadData.status !== lead.status) {
@@ -698,6 +781,9 @@ class MemoryDB {
     this.leads.splice(idx, 1);
     this.leadUpdates = this.leadUpdates.filter((u) => u.lead_id !== id);
     this.leadAttachments = this.leadAttachments.filter((a) => a.lead_id !== id);
+    this.persist('leads');
+    this.persist('lead_updates');
+    this.persist('lead_attachments');
     
     this.notify('leads', 'delete', { id });
   }
@@ -723,7 +809,9 @@ class MemoryDB {
     const lIdx = this.leads.findIndex(l => l.id === leadId);
     if (lIdx !== -1) {
       this.leads[lIdx].updated_at = new Date().toISOString();
+      this.persist('leads');
     }
+    this.persist('lead_updates');
 
     // Scan for mentions and send notifications
     this.profiles.forEach((p) => {
@@ -756,6 +844,7 @@ class MemoryDB {
       created_at: new Date().toISOString()
     };
     this.leadAttachments.push(newAttach);
+    this.persist('lead_attachments');
     
     this.createLeadUpdate(leadId, uploadedBy, `Attached file: ${fileName}`);
     this.notify('lead_attachments', 'insert', newAttach);
@@ -776,6 +865,7 @@ class MemoryDB {
       created_at: new Date().toISOString()
     };
     this.tasks.unshift(newTask);
+    this.persist('tasks');
 
     // Notify assignees
     const assignees = Array.from(new Set([
@@ -814,6 +904,7 @@ class MemoryDB {
       ...taskData
     };
     this.tasks[idx] = updatedTask;
+    this.persist('tasks');
 
     // Send notifications for task status updates
     if (taskData.status && taskData.status !== task.status && task.creator_id !== userId) {
@@ -867,6 +958,7 @@ class MemoryDB {
           created_at: new Date().toISOString()
         };
         this.tasks.unshift(nextTask);
+        this.persist('tasks');
         this.notify('tasks', 'insert', nextTask);
       }
     }
@@ -880,6 +972,7 @@ class MemoryDB {
     if (idx === -1) throw new Error('Task not found');
     // Allow any user with access to delete a task
     this.tasks.splice(idx, 1);
+    this.persist('tasks');
     this.notify('tasks', 'delete', { id });
   }
 
@@ -899,6 +992,7 @@ class MemoryDB {
       created_at: new Date().toISOString()
     };
     this.reminders.unshift(newRem);
+    this.persist('reminders');
 
     // Notify invited users
     if (newRem.invited_users) {
@@ -929,6 +1023,7 @@ class MemoryDB {
       ...reminderData
     };
     this.reminders[idx] = updatedRem;
+    this.persist('reminders');
     this.notify('reminders', 'update', updatedRem);
     return updatedRem;
   }
@@ -950,6 +1045,7 @@ class MemoryDB {
       member_ids: [userId]
     };
     this.channels.push(newChan);
+    this.persist('channels');
     this.notify('channels', 'insert', newChan);
     return newChan;
   }
@@ -995,6 +1091,7 @@ class MemoryDB {
       created_at: new Date().toISOString()
     };
     this.messages.push(newMsg);
+    this.persist('messages');
 
     // Send notifications for DMs
     if (receiverId && receiverId !== senderId) {
@@ -1052,6 +1149,7 @@ class MemoryDB {
       created_at: new Date().toISOString()
     };
     this.notifications.unshift(newNotif);
+    this.persist('notifications');
     this.notify('notifications', 'insert', newNotif);
     return newNotif;
   }
@@ -1060,6 +1158,7 @@ class MemoryDB {
     const idx = this.notifications.findIndex((n) => n.id === id);
     if (idx !== -1) {
       this.notifications[idx].is_read = true;
+      this.persist('notifications');
       this.notify('notifications', 'update', this.notifications[idx]);
     }
   }
@@ -1070,6 +1169,7 @@ class MemoryDB {
         n.is_read = true;
       }
     });
+    this.persist('notifications');
     this.notify('notifications', 'update_all', { userId });
   }
 
@@ -1082,6 +1182,7 @@ class MemoryDB {
     if (this.currentUser.id === id) {
       this.currentUser = updated;
     }
+    this.persist('profiles');
     this.notify('profiles', 'update', updated);
     this.notify('auth', 'update', updated);
     return updated;
@@ -1089,6 +1190,7 @@ class MemoryDB {
 
   hardDeleteProfile(id: string) {
     this.profiles = this.profiles.filter((p) => p.id !== id);
+    this.persist('profiles');
     try {
       const deletedRaw = localStorage.getItem('relayhq_deleted_profiles');
       const deletedIds = deletedRaw ? JSON.parse(deletedRaw) : [];
@@ -1105,13 +1207,22 @@ class MemoryDB {
       ...l,
       assigned_users: l.assigned_users?.filter((uid) => uid !== id) || []
     }));
+    this.persist('leads');
+    
     this.tasks = this.tasks.filter((t) => t.assignee_id !== id && t.creator_id !== id);
+    this.persist('tasks');
+    
     this.reminders = this.reminders.filter((r) => r.creator_id !== id);
+    this.persist('reminders');
+    
     this.messages = this.messages.filter((m) => m.sender_id !== id && m.receiver_id !== id);
+    this.persist('messages');
+    
     this.channels = this.channels.map((c) => ({
       ...c,
       member_ids: c.member_ids?.filter((uid) => uid !== id) || []
     }));
+    this.persist('channels');
     
     this.notify('profiles', 'delete', { id });
     this.notify('auth', 'delete', { id });
@@ -1131,6 +1242,7 @@ class MemoryDB {
       updated_at: new Date().toISOString()
     };
     this.personalNotes.unshift(newNote);
+    this.persist('personal_notes');
     this.notify('personal_notes', 'insert', newNote);
     return newNote;
   }
@@ -1144,6 +1256,7 @@ class MemoryDB {
       updated_at: new Date().toISOString()
     };
     this.personalNotes[idx] = updated;
+    this.persist('personal_notes');
     this.notify('personal_notes', 'update', updated);
     return updated;
   }
@@ -1152,6 +1265,7 @@ class MemoryDB {
     const idx = this.personalNotes.findIndex((n) => n.id === id);
     if (idx === -1) throw new Error('Note not found');
     this.personalNotes.splice(idx, 1);
+    this.persist('personal_notes');
     this.notify('personal_notes', 'delete', { id });
   }
 
@@ -1176,6 +1290,7 @@ class MemoryDB {
     
     const updatedMsg = { ...msg, reactions: cleanedReactions };
     this.messages[idx] = updatedMsg;
+    this.persist('messages');
     this.notify('messages', 'update', updatedMsg);
     return updatedMsg;
   }
@@ -1201,6 +1316,7 @@ class MemoryDB {
     
     const updatedUpd = { ...upd, reactions: cleanedReactions };
     this.leadUpdates[idx] = updatedUpd;
+    this.persist('lead_updates');
     this.notify('lead_updates', 'update', updatedUpd);
     return updatedUpd;
   }
