@@ -1,8 +1,79 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { dbClient } from '../../services/dbClient';
 import { useAuth } from '../../context/AuthContext';
 import type { PersonalNote, NoteCategory, Lead } from '../../types/database';
-import { Plus, Trash2, FileText, ChevronRight, Save, Sparkles } from 'lucide-react';
+import {
+  Plus, Trash2, FileText, ChevronRight, Save, Sparkles,
+  Bold, Italic, Underline, Strikethrough, AlignLeft, AlignCenter,
+  AlignRight, AlignJustify, List, ListOrdered, Undo2, Redo2,
+  Palette, Highlighter, Eraser, ChevronDown
+} from 'lucide-react';
+
+const FONTS = [
+  { name: 'Inter', value: 'Inter, sans-serif' },
+  { name: 'Outfit', value: 'Outfit, sans-serif' },
+  { name: 'Space Grotesk', value: 'Space Grotesk, sans-serif' },
+  { name: 'JetBrains Mono', value: 'JetBrains Mono, monospace' },
+  { name: 'Lora', value: 'Lora, serif' },
+  { name: 'Playfair Display', value: 'Playfair Display, serif' },
+  { name: 'Montserrat', value: 'Montserrat, sans-serif' },
+  { name: 'Poppins', value: 'Poppins, sans-serif' },
+  { name: 'Roboto', value: 'Roboto, sans-serif' },
+  { name: 'Open Sans', value: 'Open Sans, sans-serif' },
+  { name: 'Merriweather', value: 'Merriweather, serif' },
+  { name: 'Pacifico', value: 'Pacifico, cursive' },
+  { name: 'Lobster', value: 'Lobster, sans-serif' },
+  { name: 'Great Vibes', value: 'Great Vibes, cursive' },
+  { name: 'Cinzel', value: 'Cinzel, serif' },
+  { name: 'Cormorant Garamond', value: 'Cormorant Garamond, serif' },
+  { name: 'Oswald', value: 'Oswald, sans-serif' },
+  { name: 'Playpen Sans', value: 'Playpen Sans, sans-serif' },
+  { name: 'Raleway', value: 'Raleway, sans-serif' },
+  { name: 'Ubuntu', value: 'Ubuntu, sans-serif' },
+  { name: 'Quicksand', value: 'Quicksand, sans-serif' },
+  { name: 'Dancing Script', value: 'Dancing Script, cursive' },
+  { name: 'Kanit', value: 'Kanit, sans-serif' },
+  { name: 'Caveat', value: 'Caveat, cursive' },
+  { name: 'Anton', value: 'Anton, sans-serif' },
+  { name: 'Arial', value: 'Arial, sans-serif' },
+  { name: 'Georgia', value: 'Georgia, serif' },
+  { name: 'Times New Roman', value: 'Times New Roman, serif' },
+  { name: 'Courier New', value: 'Courier New, monospace' }
+];
+
+const SIZES = [
+  { label: '10px', value: '1' },
+  { label: '13px', value: '2' },
+  { label: '16px', value: '3' },
+  { label: '18px', value: '4' },
+  { label: '24px', value: '5' },
+  { label: '32px', value: '6' },
+  { label: '48px', value: '7' }
+];
+
+const TEXT_COLORS = [
+  { name: 'Default', value: 'inherit' },
+  { name: 'Charcoal', value: '#374151' },
+  { name: 'Red', value: '#ef4444' },
+  { name: 'Orange', value: '#f97316' },
+  { name: 'Yellow', value: '#eab308' },
+  { name: 'Green', value: '#22c55e' },
+  { name: 'Blue', value: '#3b82f6' },
+  { name: 'Indigo', value: '#6366f1' },
+  { name: 'Purple', value: '#a855f7' },
+  { name: 'Pink', value: '#ec4899' },
+  { name: 'White', value: '#ffffff' }
+];
+
+const HIGHLIGHT_COLORS = [
+  { name: 'None', value: 'transparent' },
+  { name: 'Yellow', value: '#fef08a' },
+  { name: 'Green', value: '#bbf7d0' },
+  { name: 'Blue', value: '#bfdbfe' },
+  { name: 'Purple', value: '#e9d5ff' },
+  { name: 'Pink', value: '#fbcfe8' },
+  { name: 'Orange', value: '#fed7aa' }
+];
 
 export const NotesView: React.FC = () => {
   const { currentUser } = useAuth();
@@ -18,6 +89,13 @@ export const NotesView: React.FC = () => {
 
   const [activeCategoryFilter, setActiveCategoryFilter] = useState<string>('all');
   const [successMsg, setSuccessMsg] = useState(false);
+
+  // Rich Text Editor states
+  const [activeNoteId, setActiveNoteId] = useState<string | null>(null);
+  const editorRef = useRef<HTMLDivElement>(null);
+  const [openMenu, setOpenMenu] = useState<'font' | 'size' | 'color' | 'highlight' | null>(null);
+  const [currentFont, setCurrentFont] = useState('Inter');
+  const [currentSize, setCurrentSize] = useState('16px');
 
   const fetchNotesAndLeads = async () => {
     const data = await dbClient.getPersonalNotes();
@@ -46,12 +124,23 @@ export const NotesView: React.FC = () => {
     };
   }, [currentUser]);
 
+  // Sync editor content editable div only when the active note ID changes
+  useEffect(() => {
+    if (editorRef.current && selectedNote) {
+      editorRef.current.innerHTML = selectedNote.content || '';
+      // Try to parse font/size from first element or reset default
+      setCurrentFont('Inter');
+      setCurrentSize('16px');
+    }
+  }, [activeNoteId]);
+
   const handleSelectNote = (note: PersonalNote) => {
     setSelectedNote(note);
     setTitle(note.title);
     setContent(note.content);
     setCategory(note.category);
     setLeadId(note.lead_id || '');
+    setActiveNoteId(note.id);
   };
 
   const handleCreateNewNote = async () => {
@@ -70,11 +159,12 @@ export const NotesView: React.FC = () => {
 
   const handleSaveNote = async () => {
     if (!selectedNote) return;
+    const noteContent = editorRef.current ? editorRef.current.innerHTML : content;
 
     try {
       const updated = await dbClient.updatePersonalNote(selectedNote.id, {
         title: title.trim() || 'Untitled Scratch Note',
-        content,
+        content: noteContent,
         category,
         lead_id: leadId || undefined,
       });
@@ -98,10 +188,26 @@ export const NotesView: React.FC = () => {
       setContent('');
       setCategory('general');
       setLeadId('');
+      setActiveNoteId(null);
       await fetchNotesAndLeads();
     } catch (err) {
       console.error(err);
     }
+  };
+
+  const handleEditorInput = () => {
+    if (editorRef.current) {
+      setContent(editorRef.current.innerHTML);
+    }
+  };
+
+  const execCmd = (command: string, value: string = '') => {
+    document.execCommand(command, false, value);
+    if (editorRef.current) {
+      editorRef.current.focus();
+    }
+    handleEditorInput();
+    setOpenMenu(null);
   };
 
   const categories: { value: string; label: string }[] = [
@@ -120,6 +226,15 @@ export const NotesView: React.FC = () => {
 
   const filteredNotes = getFilteredNotes();
 
+  // Close menus on click outside
+  useEffect(() => {
+    const handleOutsideClick = () => {
+      setOpenMenu(null);
+    };
+    window.addEventListener('click', handleOutsideClick);
+    return () => window.removeEventListener('click', handleOutsideClick);
+  }, []);
+
   return (
     <div className="flex h-[calc(100vh-3.5rem)] overflow-hidden bg-background">
       {/* Left Rail: Notes Directory */}
@@ -128,7 +243,7 @@ export const NotesView: React.FC = () => {
           <span className="text-xs font-bold text-foreground uppercase tracking-wider">Scratchpad</span>
           <button
             onClick={handleCreateNewNote}
-            className="p-1 hover:bg-muted text-primary rounded"
+            className="p-1 hover:bg-muted text-primary rounded cursor-pointer"
             title="Create new note"
           >
             <Plus className="h-4 w-4" />
@@ -141,7 +256,7 @@ export const NotesView: React.FC = () => {
             <button
               key={cat.value}
               onClick={() => setActiveCategoryFilter(cat.value)}
-              className={`w-full text-left px-2 py-1.5 rounded text-[11px] font-semibold transition-colors ${
+              className={`w-full text-left px-2 py-1.5 rounded text-[11px] font-semibold transition-colors cursor-pointer ${
                 activeCategoryFilter === cat.value
                   ? 'bg-muted text-foreground'
                   : 'text-muted-foreground hover:bg-muted/40 hover:text-foreground'
@@ -161,7 +276,7 @@ export const NotesView: React.FC = () => {
               <button
                 key={note.id}
                 onClick={() => handleSelectNote(note)}
-                className={`w-full text-left px-2 py-2 rounded text-xs transition-colors flex items-center gap-2 ${
+                className={`w-full text-left px-2 py-2 rounded text-xs transition-colors flex items-center gap-2 cursor-pointer ${
                   selectedNote?.id === note.id
                     ? 'bg-primary/10 text-primary font-bold'
                     : 'text-muted-foreground hover:bg-muted/40 hover:text-foreground'
@@ -177,7 +292,7 @@ export const NotesView: React.FC = () => {
       </div>
 
       {/* Right Rail: Editor Panel */}
-      <div className="flex-1 flex flex-col h-full bg-background">
+      <div className="flex-1 flex flex-col h-full bg-background min-w-0">
         {selectedNote ? (
           <div className="flex-1 flex flex-col h-full overflow-hidden p-4 sm:p-6 space-y-4">
             {/* Editor Header Toolbar */}
@@ -234,7 +349,7 @@ export const NotesView: React.FC = () => {
               </div>
 
               <div className="flex items-center gap-2">
-                <span className="text-muted-foreground font-semibold w-20 flex-shrink-0">Link to Lead:</span>
+                <span className="text-muted-foreground font-semibold w-20 flex-shrink-0">Link to Project:</span>
                 <select
                   value={leadId}
                   onChange={(e) => setLeadId(e.target.value)}
@@ -250,17 +365,275 @@ export const NotesView: React.FC = () => {
               </div>
             </div>
 
-            {/* Note Textarea */}
-            <div className="flex-1 flex flex-col min-h-0 border border-border rounded-lg bg-card focus-within:border-primary">
+            {/* Text Formatting Toolbar */}
+            <div className="flex flex-wrap items-center gap-1 bg-card border border-border p-2 rounded-lg text-xs shadow-sm z-10">
+              {/* Font Family Dropdown */}
+              <div className="relative" onClick={(e) => e.stopPropagation()}>
+                <button
+                  type="button"
+                  onClick={() => setOpenMenu(openMenu === 'font' ? null : 'font')}
+                  className="flex items-center gap-1.5 px-2.5 py-1.5 bg-muted/50 hover:bg-muted text-foreground border border-border rounded text-[11px] font-semibold cursor-pointer min-w-32 max-w-40 justify-between"
+                  title="Choose Font Style"
+                >
+                  <span className="truncate" style={{ fontFamily: FONTS.find(f => f.name === currentFont)?.value || 'sans-serif' }}>
+                    {currentFont}
+                  </span>
+                  <ChevronDown className="h-3 w-3 opacity-60 flex-shrink-0" />
+                </button>
+                {openMenu === 'font' && (
+                  <div className="absolute left-0 mt-1 w-56 max-h-64 overflow-y-auto bg-card border border-border rounded-lg shadow-xl py-1 z-30">
+                    {FONTS.map((font) => (
+                      <button
+                        key={font.name}
+                        type="button"
+                        onClick={() => {
+                          setCurrentFont(font.name);
+                          execCmd('fontName', font.value);
+                        }}
+                        style={{ fontFamily: font.value }}
+                        className={`w-full text-left px-3 py-1.5 text-xs hover:bg-muted text-foreground transition-colors cursor-pointer flex items-center justify-between ${
+                          currentFont === font.name ? 'bg-primary/10 text-primary font-bold' : ''
+                        }`}
+                      >
+                        <span>{font.name}</span>
+                        <span className="text-[10px] text-muted-foreground opacity-50">Abc</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Font Size Dropdown */}
+              <div className="relative" onClick={(e) => e.stopPropagation()}>
+                <button
+                  type="button"
+                  onClick={() => setOpenMenu(openMenu === 'size' ? null : 'size')}
+                  className="flex items-center gap-1.5 px-2.5 py-1.5 bg-muted/50 hover:bg-muted text-foreground border border-border rounded text-[11px] font-semibold cursor-pointer min-w-20 justify-between"
+                  title="Font Size"
+                >
+                  <span>{currentSize}</span>
+                  <ChevronDown className="h-3 w-3 opacity-60 flex-shrink-0" />
+                </button>
+                {openMenu === 'size' && (
+                  <div className="absolute left-0 mt-1 w-28 bg-card border border-border rounded-lg shadow-xl py-1 z-30">
+                    {SIZES.map((size) => (
+                      <button
+                        key={size.label}
+                        type="button"
+                        onClick={() => {
+                          setCurrentSize(size.label);
+                          execCmd('fontSize', size.value);
+                        }}
+                        className={`w-full text-left px-3 py-1.5 text-xs hover:bg-muted text-foreground cursor-pointer ${
+                          currentSize === size.label ? 'bg-primary/10 text-primary font-bold' : ''
+                        }`}
+                      >
+                        {size.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div className="h-6 w-px bg-border mx-1" />
+
+              {/* Basic Styles */}
+              <button
+                type="button"
+                onClick={() => execCmd('bold')}
+                className="p-1.5 hover:bg-muted text-muted-foreground hover:text-foreground rounded cursor-pointer"
+                title="Bold (Ctrl+B)"
+              >
+                <Bold className="h-4 w-4" />
+              </button>
+              <button
+                type="button"
+                onClick={() => execCmd('italic')}
+                className="p-1.5 hover:bg-muted text-muted-foreground hover:text-foreground rounded cursor-pointer"
+                title="Italic (Ctrl+I)"
+              >
+                <Italic className="h-4 w-4" />
+              </button>
+              <button
+                type="button"
+                onClick={() => execCmd('underline')}
+                className="p-1.5 hover:bg-muted text-muted-foreground hover:text-foreground rounded cursor-pointer"
+                title="Underline (Ctrl+U)"
+              >
+                <Underline className="h-4 w-4" />
+              </button>
+              <button
+                type="button"
+                onClick={() => execCmd('strikeThrough')}
+                className="p-1.5 hover:bg-muted text-muted-foreground hover:text-foreground rounded cursor-pointer"
+                title="Strikethrough"
+              >
+                <Strikethrough className="h-4 w-4" />
+              </button>
+
+              <div className="h-6 w-px bg-border mx-1" />
+
+              {/* Text Color dropdown */}
+              <div className="relative" onClick={(e) => e.stopPropagation()}>
+                <button
+                  type="button"
+                  onClick={() => setOpenMenu(openMenu === 'color' ? null : 'color')}
+                  className="p-1.5 hover:bg-muted text-muted-foreground hover:text-foreground rounded cursor-pointer flex items-center gap-0.5"
+                  title="Text Color"
+                >
+                  <Palette className="h-4 w-4" />
+                  <ChevronDown className="h-2 w-2 opacity-60" />
+                </button>
+                {openMenu === 'color' && (
+                  <div className="absolute left-0 mt-1 p-2 bg-card border border-border rounded-lg shadow-xl z-30 grid grid-cols-4 gap-1.5 w-40">
+                    {TEXT_COLORS.map((color) => (
+                      <button
+                        key={color.name}
+                        type="button"
+                        onClick={() => execCmd('foreColor', color.value)}
+                        style={{ backgroundColor: color.value === 'inherit' ? 'transparent' : color.value }}
+                        className={`h-6 w-6 rounded-full border border-border/80 hover:scale-110 transition-transform cursor-pointer flex items-center justify-center`}
+                        title={color.name}
+                      >
+                        {color.value === 'inherit' && <Eraser className="h-3 w-3 text-foreground" />}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Highlight dropdown */}
+              <div className="relative" onClick={(e) => e.stopPropagation()}>
+                <button
+                  type="button"
+                  onClick={() => setOpenMenu(openMenu === 'highlight' ? null : 'highlight')}
+                  className="p-1.5 hover:bg-muted text-muted-foreground hover:text-foreground rounded cursor-pointer flex items-center gap-0.5"
+                  title="Highlight Text"
+                >
+                  <Highlighter className="h-4 w-4" />
+                  <ChevronDown className="h-2 w-2 opacity-60" />
+                </button>
+                {openMenu === 'highlight' && (
+                  <div className="absolute left-0 mt-1 p-2 bg-card border border-border rounded-lg shadow-xl z-30 grid grid-cols-4 gap-1.5 w-40">
+                    {HIGHLIGHT_COLORS.map((color) => (
+                      <button
+                        key={color.name}
+                        type="button"
+                        onClick={() => execCmd('hiliteColor', color.value)}
+                        style={{ backgroundColor: color.value === 'transparent' ? 'transparent' : color.value }}
+                        className={`h-6 w-6 rounded-full border border-border/80 hover:scale-110 transition-transform cursor-pointer flex items-center justify-center`}
+                        title={color.name}
+                      >
+                        {color.value === 'transparent' && <Eraser className="h-3 w-3 text-foreground" />}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div className="h-6 w-px bg-border mx-1" />
+
+              {/* Alignments */}
+              <button
+                type="button"
+                onClick={() => execCmd('justifyLeft')}
+                className="p-1.5 hover:bg-muted text-muted-foreground hover:text-foreground rounded cursor-pointer"
+                title="Align Left"
+              >
+                <AlignLeft className="h-4 w-4" />
+              </button>
+              <button
+                type="button"
+                onClick={() => execCmd('justifyCenter')}
+                className="p-1.5 hover:bg-muted text-muted-foreground hover:text-foreground rounded cursor-pointer"
+                title="Align Center"
+              >
+                <AlignCenter className="h-4 w-4" />
+              </button>
+              <button
+                type="button"
+                onClick={() => execCmd('justifyRight')}
+                className="p-1.5 hover:bg-muted text-muted-foreground hover:text-foreground rounded cursor-pointer"
+                title="Align Right"
+              >
+                <AlignRight className="h-4 w-4" />
+              </button>
+              <button
+                type="button"
+                onClick={() => execCmd('justifyFull')}
+                className="p-1.5 hover:bg-muted text-muted-foreground hover:text-foreground rounded cursor-pointer"
+                title="Justify"
+              >
+                <AlignJustify className="h-4 w-4" />
+              </button>
+
+              <div className="h-6 w-px bg-border mx-1" />
+
+              {/* Lists */}
+              <button
+                type="button"
+                onClick={() => execCmd('insertUnorderedList')}
+                className="p-1.5 hover:bg-muted text-muted-foreground hover:text-foreground rounded cursor-pointer"
+                title="Bullet List"
+              >
+                <List className="h-4 w-4" />
+              </button>
+              <button
+                type="button"
+                onClick={() => execCmd('insertOrderedList')}
+                className="p-1.5 hover:bg-muted text-muted-foreground hover:text-foreground rounded cursor-pointer"
+                title="Numbered List"
+              >
+                <ListOrdered className="h-4 w-4" />
+              </button>
+
+              <div className="h-6 w-px bg-border mx-1" />
+
+              {/* History */}
+              <button
+                type="button"
+                onClick={() => execCmd('undo')}
+                className="p-1.5 hover:bg-muted text-muted-foreground hover:text-foreground rounded cursor-pointer"
+                title="Undo"
+              >
+                <Undo2 className="h-4 w-4" />
+              </button>
+              <button
+                type="button"
+                onClick={() => execCmd('redo')}
+                className="p-1.5 hover:bg-muted text-muted-foreground hover:text-foreground rounded cursor-pointer"
+                title="Redo"
+              >
+                <Redo2 className="h-4 w-4" />
+              </button>
+
+              <div className="h-6 w-px bg-border mx-1" />
+
+              {/* Clear Formatting */}
+              <button
+                type="button"
+                onClick={() => execCmd('removeFormat')}
+                className="p-1.5 hover:bg-muted text-muted-foreground hover:text-foreground rounded cursor-pointer"
+                title="Clear Formatting"
+              >
+                <Eraser className="h-4 w-4" />
+              </button>
+            </div>
+
+            {/* Note Editor Body */}
+            <div className="flex-1 flex flex-col min-h-0 border border-border rounded-lg bg-card focus-within:border-primary overflow-hidden">
               <div className="px-3 py-1.5 border-b border-border bg-muted/10 text-[10px] text-muted-foreground flex items-center gap-1.5">
                 <Sparkles className="h-3 w-3 text-primary animate-pulse" />
-                <span>Reps Workspace Scratchpad: Jot outbound draft sequences, copy templates, or notes.</span>
+                <span>Reps Workspace Scratchpad: Copy-paste rich text, edit styles, select fonts, or clean up templates.</span>
               </div>
-              <textarea
-                value={content}
-                onChange={(e) => setContent(e.target.value)}
-                placeholder="Start writing sales template, playbooks, or call scripts..."
-                className="flex-1 w-full p-4 bg-transparent border-none text-foreground text-xs sm:text-sm focus:outline-none resize-none leading-relaxed font-sans"
+              
+              <div
+                ref={editorRef}
+                contentEditable
+                onInput={handleEditorInput}
+                {...{ placeholder: "Start writing sales template, playbooks, or call scripts..." }}
+                className="flex-1 w-full p-4 bg-transparent text-foreground text-xs sm:text-sm focus:outline-none overflow-y-auto leading-relaxed font-sans editor-content"
+                style={{ outline: 'none' }}
               />
             </div>
           </div>
@@ -271,7 +644,7 @@ export const NotesView: React.FC = () => {
             <p className="text-[10px] mt-1">Select an existing scratchpad template or create a new one.</p>
             <button
               onClick={handleCreateNewNote}
-              className="mt-3 px-3 py-1.5 bg-primary hover:bg-primary/95 text-primary-foreground rounded font-semibold text-[10px] transition-colors"
+              className="mt-3 px-3 py-1.5 bg-primary hover:bg-primary/95 text-primary-foreground rounded font-semibold text-[10px] transition-colors cursor-pointer"
             >
               New Scratch Note
             </button>

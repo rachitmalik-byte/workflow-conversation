@@ -1,5 +1,5 @@
 @import "tailwindcss";
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@300;400;500;600;700&family=Outfit:wght@300;400;500;600;700;800;900&family=Lora:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Space+Grotesk:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=JetBrains+Mono:wght@300;400;600&family=Outfit:wght@300;400;600;800&family=Lora:ital,wght@0,400;0,600;1,400&family=Space+Grotesk:wght@300;400;600&family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@300;400;600&family=Poppins:wght@300;400;600&family=Roboto:wght@300;400;700&family=Open+Sans:wght@300;400;600&family=Merriweather:ital,wght@0,300;0,400;1,300&family=Pacifico&family=Lobster&family=Great+Vibes&family=Cinzel:wght@400;700&family=Cormorant+Garamond:ital,wght@0,400;1,400&family=Oswald:wght@400;700&family=Playpen+Sans:wght@400;700&family=Raleway:wght@300;400;700&family=Ubuntu:wght@400;700&family=Quicksand:wght@400;700&family=Dancing+Script:wght@400;700&family=Kanit:wght@300;400;700&family=Caveat:wght@400;700&family=Anton&display=swap');
 
 @theme {
   --color-background: hsl(var(--background));
@@ -1114,3 +1114,31 @@
   outline-offset: 2px;
   border-radius: 4px;
 }
+
+/* Note Editor Content overrides */
+.editor-content:empty::before {
+  content: attr(placeholder);
+  color: hsl(var(--muted-foreground));
+  opacity: 0.65;
+  pointer-events: none;
+}
+.editor-content ul {
+  list-style-type: disc !important;
+  margin-left: 1.25rem !important;
+  padding-left: 0.25rem !important;
+}
+.editor-content ol {
+  list-style-type: decimal !important;
+  margin-left: 1.25rem !important;
+  padding-left: 0.25rem !important;
+}
+.editor-content blockquote {
+  border-left: 3px solid hsl(var(--border)) !important;
+  padding-left: 0.75rem !important;
+  margin: 0.5rem 0 !important;
+  color: hsl(var(--muted-foreground)) !important;
+}
+.editor-content p {
+  margin-bottom: 0.5rem !important;
+}
+
