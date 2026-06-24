@@ -578,7 +578,7 @@ class MemoryDB {
       {
         id: 'note-1',
         title: 'US Enterprise Tech - Cold Email Template',
-        content: 'Hi {{prospect_name}},\n\nNoticed you are scaling up the outbound growth team at {{company_name}}. We built a workflow execution engine called RelayHQ that saves reps 2.5 hours per day on CRM updates.\n\nWould you be open to a 10-minute sync this Thursday?\n\nBest,\n{{sender_name}}',
+        content: 'Hi {{prospect_name}},<br /><br />Noticed you are scaling up the outbound growth team at {{company_name}}. We built a workflow execution engine called RelayHQ that saves reps 2.5 hours per day on CRM updates.<br /><br />Would you be open to a 10-minute sync this Thursday?<br /><br />Best,<br />{{sender_name}}',
         category: 'email_template',
         creator_id: 'specialist-1',
         created_at: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
@@ -587,7 +587,7 @@ class MemoryDB {
       {
         id: 'note-2',
         title: 'Pepper Potts follow up call script',
-        content: '1. Re-pitch customized SLA terms.\n2. Address contract clause 4.2 details regarding lead generation volumes.\n3. Offer 5% discount on quarterly retainer pilot if signed before Q3.',
+        content: '1. Re-pitch customized SLA terms.<br />2. Address contract clause 4.2 details regarding lead generation volumes.<br />3. Offer 5% discount on quarterly retainer pilot if signed before Q3.',
         category: 'call_script',
         lead_id: 'lead-2',
         creator_id: 'specialist-1',

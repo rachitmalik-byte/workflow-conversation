@@ -5,7 +5,6 @@ import { dbClient } from '../../services/dbClient';
 import { supabase } from '../../services/supabase';
 import type { Profile, UserRole } from '../../types/database';
 import { AlertCircle, Users, Shield, Circle, User, Wifi, Bell, Key, Lock, Trash2, Palette } from 'lucide-react';
-import { mockDb } from '../../services/mockDb';
 
 type TabType = 'profile' | 'connection' | 'teammates' | 'notifications' | 'security';
 
@@ -287,7 +286,7 @@ export const SettingsView: React.FC = () => {
     setOnboardError(null);
 
     try {
-      if (supabase) {
+      if (dbClient.isSupabaseEnabled && supabase) {
         // Create user in Supabase auth first
         const signUpPass = password.trim() || 'Welcome123!';
         const { data, error } = await supabase.auth.signUp({
@@ -330,7 +329,7 @@ export const SettingsView: React.FC = () => {
           updated_at: new Date().toISOString(),
         };
 
-        mockDb.profiles.push(newProfile);
+        await dbClient.createProfile(newProfile);
       }
       
       if (currentUser) {
@@ -384,7 +383,7 @@ export const SettingsView: React.FC = () => {
       return;
     }
 
-    if (!supabase) {
+    if (!dbClient.isSupabaseEnabled || !supabase) {
       // Simulator mode — simulate success locally
       setIsSavingPassword(true);
       setTimeout(() => {

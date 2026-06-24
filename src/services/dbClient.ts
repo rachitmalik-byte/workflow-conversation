@@ -77,6 +77,19 @@ class DBClient {
     return data || [];
   }
 
+  async createProfile(profile: Profile): Promise<Profile> {
+    const client = this.getClient();
+    if (!client) {
+      mockDb.profiles.push(profile);
+      mockDb.persist('profiles');
+      mockDb.notify('profiles', 'insert', profile);
+      return profile;
+    }
+    const { error } = await client.from('profiles').insert(profile);
+    if (error) throw error;
+    return profile;
+  }
+
   async switchUser(userId: string): Promise<Profile> {
     const client = this.getClient();
     if (!client) {

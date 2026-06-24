@@ -217,7 +217,12 @@ export const NotesView: React.FC = () => {
   // Sync editor content editable div only when the active note ID changes
   useEffect(() => {
     if (editorRef.current && selectedNote) {
-      editorRef.current.innerHTML = selectedNote.content || '';
+      let contentHtml = selectedNote.content || '';
+      // If content contains newlines but no HTML tags, convert newlines to <br> for rich text
+      if (contentHtml && !/<[a-z][\s\S]*>/i.test(contentHtml)) {
+        contentHtml = contentHtml.replace(/\n/g, '<br>');
+      }
+      editorRef.current.innerHTML = contentHtml;
       // Try to parse font/size from first element or reset default
       setCurrentFont('Inter');
       setCurrentSize('16px');
@@ -248,26 +253,42 @@ export const NotesView: React.FC = () => {
     }
   };
 
-  const handleSaveNote = async () => {
-    if (!selectedNote) return;
-    const noteContent = editorRef.current ? editorRef.current.innerHTML : content;
+  const handleSaveField = async (fields: { title?: string; content?: string; category?: NoteCategory; leadId?: string }) => {
+    if (!selectedNoteRef.current) return;
+
+    const newTitle = fields.title !== undefined ? fields.title : title;
+    const newContent = fields.content !== undefined ? fields.content : (editorRef.current ? editorRef.current.innerHTML : content);
+    const newCategory = fields.category !== undefined ? fields.category : category;
+    const newLeadId = fields.leadId !== undefined ? fields.leadId : leadId;
+
+    if (
+      newTitle.trim() === selectedNoteRef.current.title &&
+      newContent === selectedNoteRef.current.content &&
+      newCategory === selectedNoteRef.current.category &&
+      (newLeadId || undefined) === selectedNoteRef.current.lead_id
+    ) {
+      return; // No change, skip save
+    }
 
     try {
-      const updated = await dbClient.updatePersonalNote(selectedNote.id, {
-        title: title.trim() || 'Untitled Scratch Note',
-        content: noteContent,
-        category,
-        lead_id: leadId || undefined,
+      const updated = await dbClient.updatePersonalNote(selectedNoteRef.current.id, {
+        title: newTitle.trim() || 'Untitled Scratch Note',
+        content: newContent,
+        category: newCategory,
+        lead_id: newLeadId || undefined,
       });
       await fetchNotesAndLeads();
       setSelectedNote(updated);
       setSuccessMsg(true);
-      triggerConfetti();
       setTimeout(() => setSuccessMsg(false), 2000);
     } catch (err: any) {
-      console.error(err);
-      alert(err.message || 'Failed to save scratch note.');
+      console.error('Failed to auto-save scratch note:', err);
     }
+  };
+
+  const handleSaveNote = async () => {
+    await handleSaveField({});
+    triggerConfetti();
   };
 
   const handleDeleteNote = async () => {
@@ -452,6 +473,7 @@ export const NotesView: React.FC = () => {
                   type="text"
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
+                  onBlur={() => handleSaveField({ title })}
                   placeholder="Untitled Scratch Note"
                   className="w-full text-base sm:text-lg font-bold bg-transparent border-none text-foreground focus:outline-none placeholder-muted-foreground/60"
                 />
@@ -459,7 +481,7 @@ export const NotesView: React.FC = () => {
 
               <div className="flex items-center gap-2">
                 {successMsg && (
-                  <span className="text-[10px] text-success bg-success/10 border border-success/20 px-2 py-1 rounded font-medium">
+                  <span className="animate-fade-in text-[10px] text-success bg-success/10 border border-success/20 px-2 py-1 rounded font-medium">
                     Saved Note
                   </span>
                 )}
@@ -487,7 +509,11 @@ export const NotesView: React.FC = () => {
                 <span className="text-muted-foreground font-semibold w-20 flex-shrink-0">Category:</span>
                 <select
                   value={category}
-                  onChange={(e) => setCategory(e.target.value as NoteCategory)}
+                  onChange={(e) => {
+                    const val = e.target.value as NoteCategory;
+                    setCategory(val);
+                    handleSaveField({ category: val });
+                  }}
                   className="bg-card border border-border text-foreground px-2 py-1 rounded text-xs focus:outline-none focus:border-primary cursor-pointer flex-1"
                 >
                   <option value="general">📋 General Note</option>
@@ -502,7 +528,11 @@ export const NotesView: React.FC = () => {
                 <span className="text-muted-foreground font-semibold w-20 flex-shrink-0">Link to Project:</span>
                 <select
                   value={leadId}
-                  onChange={(e) => setLeadId(e.target.value)}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setLeadId(val);
+                    handleSaveField({ leadId: val });
+                  }}
                   className="bg-card border border-border text-foreground px-2 py-1 rounded text-xs focus:outline-none focus:border-primary cursor-pointer flex-1"
                 >
                   <option value="">No link...</option>
@@ -782,6 +812,7 @@ export const NotesView: React.FC = () => {
                 contentEditable
                 onInput={handleEditorInput}
                 onPaste={handlePaste}
+                onBlur={() => handleSaveField({ content: editorRef.current?.innerHTML || '' })}
                 {...{ placeholder: "Start writing sales template, playbooks, or call scripts..." }}
                 className="flex-1 w-full p-4 bg-transparent text-foreground text-xs sm:text-sm focus:outline-none overflow-y-auto leading-relaxed font-sans editor-content"
                 style={{ outline: 'none' }}
@@ -839,6 +870,12 @@ const triggerConfetti = () => {
     });
   }
 
+  const handleResize = () => {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+  };
+  window.addEventListener('resize', handleResize);
+
   const draw = () => {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     let remaining = 0;
@@ -864,14 +901,12 @@ const triggerConfetti = () => {
     if (remaining > 0) {
       requestAnimationFrame(draw);
     } else {
-      document.body.removeChild(canvas);
+      window.removeEventListener('resize', handleResize);
+      if (document.body.contains(canvas)) {
+        document.body.removeChild(canvas);
+      }
     }
   };
 
   draw();
-
-  window.addEventListener('resize', () => {
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
-  });
 };

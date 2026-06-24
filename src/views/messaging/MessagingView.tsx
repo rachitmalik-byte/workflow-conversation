@@ -178,7 +178,7 @@ export const MessagingView: React.FC = () => {
       }
     }
 
-    if (!supabase) {
+    if (!dbClient.isSupabaseEnabled || !supabase) {
       alert('Production database is not connected. Configure database in Settings or Login screen first!');
       return;
     }
