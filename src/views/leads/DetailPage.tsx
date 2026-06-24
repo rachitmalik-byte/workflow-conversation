@@ -16,6 +16,15 @@ interface DetailPageProps {
 export const DetailPage: React.FC<DetailPageProps> = ({ leadId, onNavigate }) => {
   const { currentUser, profiles } = useAuth();
 
+  const [activeMobilePane, setActiveMobilePane] = useState<'details' | 'chat'>('details');
+  const [isDesktop, setIsDesktop] = useState(typeof window !== 'undefined' ? window.innerWidth >= 1024 : true);
+
+  useEffect(() => {
+    const handleResize = () => setIsDesktop(window.innerWidth >= 1024);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   const [lead, setLead] = useState<Lead | null>(null);
   const [updates, setUpdates] = useState<LeadUpdate[]>([]);
   const [attachments, setAttachments] = useState<LeadAttachment[]>([]);
@@ -454,11 +463,40 @@ export const DetailPage: React.FC<DetailPageProps> = ({ leadId, onNavigate }) =>
         </div>
       </div>
 
+      {/* Mobile Toggle Tabs */}
+      <div className="flex border-b border-border bg-card lg:hidden flex-shrink-0">
+        <button
+          onClick={() => setActiveMobilePane('details')}
+          className={`flex-1 text-center py-2.5 text-xs font-bold border-b-2 transition-colors cursor-pointer ${
+            activeMobilePane === 'details'
+              ? 'border-primary text-primary'
+              : 'border-transparent text-muted-foreground hover:text-foreground'
+          }`}
+        >
+          Project Details
+        </button>
+        <button
+          onClick={() => setActiveMobilePane('chat')}
+          className={`flex-1 text-center py-2.5 text-xs font-bold border-b-2 transition-colors cursor-pointer relative ${
+            activeMobilePane === 'chat'
+              ? 'border-primary text-primary'
+              : 'border-transparent text-muted-foreground hover:text-foreground'
+          }`}
+        >
+          Activity Chat
+          {updates.length > 0 && (
+            <span className="ml-1.5 bg-muted px-1.5 py-0.2 rounded-full text-[9px]">
+              {updates.filter(u => !u.content.startsWith('Status') && !u.content.includes('created') && !u.content.startsWith('Attached') && !u.content.startsWith('Project details')).length}
+            </span>
+          )}
+        </button>
+      </div>
+
       {/* ══ 2-Column Body ══ */}
       <div className="flex-1 overflow-hidden flex min-h-0">
 
         {/* Left: scrollable content */}
-        <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-5 space-y-4 min-w-0">
+        <div className={`flex-1 overflow-y-auto px-4 sm:px-6 py-5 space-y-4 min-w-0 ${activeMobilePane === 'details' ? 'block' : 'hidden lg:block'}`}>
 
           {/* Quick Triage */}
           <div className="grid grid-cols-2 gap-3">
@@ -681,8 +719,8 @@ export const DetailPage: React.FC<DetailPageProps> = ({ leadId, onNavigate }) =>
 
         {/* ══ Right: Chat Panel ══ */}
         <div 
-          className="relative flex-shrink-0 border-l border-border flex flex-col bg-card/40 hidden lg:flex"
-          style={{ width: `${chatWidth}px` }}
+          className={`relative flex-shrink-0 border-l border-border flex flex-col bg-card/40 w-full lg:w-auto ${activeMobilePane === 'chat' ? 'flex' : 'hidden lg:flex'}`}
+          style={isDesktop ? { width: `${chatWidth}px` } : undefined}
         >
           {/* Drag Resizer Bar */}
           <div 

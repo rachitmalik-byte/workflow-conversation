@@ -7,7 +7,7 @@ import {
   Plus, Trash2, FileText, ChevronRight, Save, Sparkles,
   Bold, Italic, Underline, Strikethrough, AlignLeft, AlignCenter,
   AlignRight, AlignJustify, List, ListOrdered, Undo2, Redo2,
-  Palette, Highlighter, Eraser, ChevronDown
+  Palette, Highlighter, Eraser, ChevronDown, ArrowLeft
 } from 'lucide-react';
 
 const FONTS = [
@@ -164,6 +164,7 @@ export const NotesView: React.FC = () => {
   const [notes, setNotes] = useState<PersonalNote[]>([]);
   const [leads, setLeads] = useState<Lead[]>([]);
   const [selectedNote, setSelectedNote] = useState<PersonalNote | null>(null);
+  const [showSidebarOnMobile, setShowSidebarOnMobile] = useState(true);
 
   // Editor states
   const [title, setTitle] = useState('');
@@ -230,6 +231,7 @@ export const NotesView: React.FC = () => {
     setCategory(note.category);
     setLeadId(note.lead_id || '');
     setActiveNoteId(note.id);
+    setShowSidebarOnMobile(false);
   };
 
   const handleCreateNewNote = async () => {
@@ -280,6 +282,7 @@ export const NotesView: React.FC = () => {
       setCategory('general');
       setLeadId('');
       setActiveNoteId(null);
+      setShowSidebarOnMobile(true);
       await fetchNotesAndLeads();
     } catch (err) {
       console.error(err);
@@ -377,7 +380,7 @@ export const NotesView: React.FC = () => {
   return (
     <div className="flex h-[calc(100vh-3.5rem)] overflow-hidden bg-background">
       {/* Left Rail: Notes Directory */}
-      <div className="w-56 sm:w-64 border-r border-border bg-card flex flex-col flex-shrink-0">
+      <div className={`w-full md:w-64 border-r border-border bg-card flex flex-col flex-shrink-0 ${showSidebarOnMobile ? 'flex' : 'hidden md:flex'}`}>
         <div className="p-3 border-b border-border flex items-center justify-between">
           <span className="text-xs font-bold text-foreground uppercase tracking-wider">Scratchpad</span>
           <button
@@ -431,12 +434,20 @@ export const NotesView: React.FC = () => {
       </div>
 
       {/* Right Rail: Editor Panel */}
-      <div className="flex-1 flex flex-col h-full bg-background min-w-0">
+      <div className={`flex-1 flex flex-col h-full bg-background min-w-0 ${!showSidebarOnMobile ? 'flex' : 'hidden md:flex'}`}>
         {selectedNote ? (
           <div className="flex-1 flex flex-col h-full overflow-hidden p-4 sm:p-6 space-y-4">
             {/* Editor Header Toolbar */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border pb-3">
-              <div className="flex-1 min-w-0">
+              <div className="flex-1 min-w-0 flex items-center">
+                <button
+                  type="button"
+                  onClick={() => setShowSidebarOnMobile(true)}
+                  className="md:hidden p-1.5 hover:bg-muted text-muted-foreground hover:text-foreground rounded-lg transition-colors cursor-pointer mr-2 flex-shrink-0"
+                  title="Back to list"
+                >
+                  <ArrowLeft className="h-4 w-4" />
+                </button>
                 <input
                   type="text"
                   value={title}
@@ -505,13 +516,13 @@ export const NotesView: React.FC = () => {
             </div>
 
             {/* Text Formatting Toolbar */}
-            <div className="flex flex-wrap items-center gap-1 bg-card border border-border p-2 rounded-lg text-xs shadow-sm z-10">
+            <div className="flex items-center gap-1 bg-card border border-border p-2 rounded-lg text-xs shadow-sm z-10 w-full overflow-x-auto scrollbar-none flex-nowrap md:flex-wrap flex-shrink-0">
               {/* Font Family Dropdown */}
-              <div className="relative" onClick={(e) => e.stopPropagation()}>
+              <div className="relative flex-shrink-0" onClick={(e) => e.stopPropagation()}>
                 <button
                   type="button"
                   onClick={() => setOpenMenu(openMenu === 'font' ? null : 'font')}
-                  className="flex items-center gap-1.5 px-2.5 py-1.5 bg-muted/50 hover:bg-muted text-foreground border border-border rounded text-[11px] font-semibold cursor-pointer min-w-32 max-w-40 justify-between"
+                  className="flex items-center gap-1.5 px-2.5 py-1.5 bg-muted/50 hover:bg-muted text-foreground border border-border rounded text-[11px] font-semibold cursor-pointer min-w-32 max-w-40 justify-between flex-shrink-0"
                   title="Choose Font Style"
                 >
                   <span className="truncate" style={{ fontFamily: FONTS.find(f => f.name === currentFont)?.value || 'sans-serif' }}>
@@ -543,11 +554,11 @@ export const NotesView: React.FC = () => {
               </div>
 
               {/* Font Size Dropdown */}
-              <div className="relative" onClick={(e) => e.stopPropagation()}>
+              <div className="relative flex-shrink-0" onClick={(e) => e.stopPropagation()}>
                 <button
                   type="button"
                   onClick={() => setOpenMenu(openMenu === 'size' ? null : 'size')}
-                  className="flex items-center gap-1.5 px-2.5 py-1.5 bg-muted/50 hover:bg-muted text-foreground border border-border rounded text-[11px] font-semibold cursor-pointer min-w-20 justify-between"
+                  className="flex items-center gap-1.5 px-2.5 py-1.5 bg-muted/50 hover:bg-muted text-foreground border border-border rounded text-[11px] font-semibold cursor-pointer min-w-20 justify-between flex-shrink-0"
                   title="Font Size"
                 >
                   <span>{currentSize}</span>
@@ -574,13 +585,13 @@ export const NotesView: React.FC = () => {
                 )}
               </div>
 
-              <div className="h-6 w-px bg-border mx-1" />
+              <div className="h-6 w-px bg-border mx-1 flex-shrink-0" />
 
               {/* Basic Styles */}
               <button
                 type="button"
                 onClick={() => execCmd('bold')}
-                className="p-1.5 hover:bg-muted text-muted-foreground hover:text-foreground rounded cursor-pointer"
+                className="p-1.5 hover:bg-muted text-muted-foreground hover:text-foreground rounded cursor-pointer flex-shrink-0"
                 title="Bold (Ctrl+B)"
               >
                 <Bold className="h-4 w-4" />
@@ -588,7 +599,7 @@ export const NotesView: React.FC = () => {
               <button
                 type="button"
                 onClick={() => execCmd('italic')}
-                className="p-1.5 hover:bg-muted text-muted-foreground hover:text-foreground rounded cursor-pointer"
+                className="p-1.5 hover:bg-muted text-muted-foreground hover:text-foreground rounded cursor-pointer flex-shrink-0"
                 title="Italic (Ctrl+I)"
               >
                 <Italic className="h-4 w-4" />
@@ -596,7 +607,7 @@ export const NotesView: React.FC = () => {
               <button
                 type="button"
                 onClick={() => execCmd('underline')}
-                className="p-1.5 hover:bg-muted text-muted-foreground hover:text-foreground rounded cursor-pointer"
+                className="p-1.5 hover:bg-muted text-muted-foreground hover:text-foreground rounded cursor-pointer flex-shrink-0"
                 title="Underline (Ctrl+U)"
               >
                 <Underline className="h-4 w-4" />
@@ -604,24 +615,24 @@ export const NotesView: React.FC = () => {
               <button
                 type="button"
                 onClick={() => execCmd('strikeThrough')}
-                className="p-1.5 hover:bg-muted text-muted-foreground hover:text-foreground rounded cursor-pointer"
+                className="p-1.5 hover:bg-muted text-muted-foreground hover:text-foreground rounded cursor-pointer flex-shrink-0"
                 title="Strikethrough"
               >
                 <Strikethrough className="h-4 w-4" />
               </button>
 
-              <div className="h-6 w-px bg-border mx-1" />
+              <div className="h-6 w-px bg-border mx-1 flex-shrink-0" />
 
               {/* Text Color dropdown */}
-              <div className="relative" onClick={(e) => e.stopPropagation()}>
+              <div className="relative flex-shrink-0" onClick={(e) => e.stopPropagation()}>
                 <button
                   type="button"
                   onClick={() => setOpenMenu(openMenu === 'color' ? null : 'color')}
-                  className="p-1.5 hover:bg-muted text-muted-foreground hover:text-foreground rounded cursor-pointer flex items-center gap-0.5"
+                  className="p-1.5 hover:bg-muted text-muted-foreground hover:text-foreground rounded cursor-pointer flex items-center gap-0.5 flex-shrink-0"
                   title="Text Color"
                 >
                   <Palette className="h-4 w-4" />
-                  <ChevronDown className="h-2 w-2 opacity-60" />
+                  <ChevronDown className="h-2 w-2 opacity-60 flex-shrink-0" />
                 </button>
                 {openMenu === 'color' && (
                   <div className="absolute left-0 mt-1 p-2 bg-card border border-border rounded-lg shadow-xl z-30 grid grid-cols-4 gap-1.5 w-40">
@@ -642,15 +653,15 @@ export const NotesView: React.FC = () => {
               </div>
 
               {/* Highlight dropdown */}
-              <div className="relative" onClick={(e) => e.stopPropagation()}>
+              <div className="relative flex-shrink-0" onClick={(e) => e.stopPropagation()}>
                 <button
                   type="button"
                   onClick={() => setOpenMenu(openMenu === 'highlight' ? null : 'highlight')}
-                  className="p-1.5 hover:bg-muted text-muted-foreground hover:text-foreground rounded cursor-pointer flex items-center gap-0.5"
+                  className="p-1.5 hover:bg-muted text-muted-foreground hover:text-foreground rounded cursor-pointer flex items-center gap-0.5 flex-shrink-0"
                   title="Highlight Text"
                 >
                   <Highlighter className="h-4 w-4" />
-                  <ChevronDown className="h-2 w-2 opacity-60" />
+                  <ChevronDown className="h-2 w-2 opacity-60 flex-shrink-0" />
                 </button>
                 {openMenu === 'highlight' && (
                   <div className="absolute left-0 mt-1 p-2 bg-card border border-border rounded-lg shadow-xl z-30 grid grid-cols-4 gap-1.5 w-40">
@@ -670,13 +681,13 @@ export const NotesView: React.FC = () => {
                 )}
               </div>
 
-              <div className="h-6 w-px bg-border mx-1" />
+              <div className="h-6 w-px bg-border mx-1 flex-shrink-0" />
 
               {/* Alignments */}
               <button
                 type="button"
                 onClick={() => execCmd('justifyLeft')}
-                className="p-1.5 hover:bg-muted text-muted-foreground hover:text-foreground rounded cursor-pointer"
+                className="p-1.5 hover:bg-muted text-muted-foreground hover:text-foreground rounded cursor-pointer flex-shrink-0"
                 title="Align Left"
               >
                 <AlignLeft className="h-4 w-4" />
@@ -684,7 +695,7 @@ export const NotesView: React.FC = () => {
               <button
                 type="button"
                 onClick={() => execCmd('justifyCenter')}
-                className="p-1.5 hover:bg-muted text-muted-foreground hover:text-foreground rounded cursor-pointer"
+                className="p-1.5 hover:bg-muted text-muted-foreground hover:text-foreground rounded cursor-pointer flex-shrink-0"
                 title="Align Center"
               >
                 <AlignCenter className="h-4 w-4" />
@@ -692,7 +703,7 @@ export const NotesView: React.FC = () => {
               <button
                 type="button"
                 onClick={() => execCmd('justifyRight')}
-                className="p-1.5 hover:bg-muted text-muted-foreground hover:text-foreground rounded cursor-pointer"
+                className="p-1.5 hover:bg-muted text-muted-foreground hover:text-foreground rounded cursor-pointer flex-shrink-0"
                 title="Align Right"
               >
                 <AlignRight className="h-4 w-4" />
@@ -700,19 +711,19 @@ export const NotesView: React.FC = () => {
               <button
                 type="button"
                 onClick={() => execCmd('justifyFull')}
-                className="p-1.5 hover:bg-muted text-muted-foreground hover:text-foreground rounded cursor-pointer"
+                className="p-1.5 hover:bg-muted text-muted-foreground hover:text-foreground rounded cursor-pointer flex-shrink-0"
                 title="Justify"
               >
                 <AlignJustify className="h-4 w-4" />
               </button>
 
-              <div className="h-6 w-px bg-border mx-1" />
+              <div className="h-6 w-px bg-border mx-1 flex-shrink-0" />
 
               {/* Lists */}
               <button
                 type="button"
                 onClick={() => execCmd('insertUnorderedList')}
-                className="p-1.5 hover:bg-muted text-muted-foreground hover:text-foreground rounded cursor-pointer"
+                className="p-1.5 hover:bg-muted text-muted-foreground hover:text-foreground rounded cursor-pointer flex-shrink-0"
                 title="Bullet List"
               >
                 <List className="h-4 w-4" />
@@ -720,19 +731,19 @@ export const NotesView: React.FC = () => {
               <button
                 type="button"
                 onClick={() => execCmd('insertOrderedList')}
-                className="p-1.5 hover:bg-muted text-muted-foreground hover:text-foreground rounded cursor-pointer"
+                className="p-1.5 hover:bg-muted text-muted-foreground hover:text-foreground rounded cursor-pointer flex-shrink-0"
                 title="Numbered List"
               >
                 <ListOrdered className="h-4 w-4" />
               </button>
 
-              <div className="h-6 w-px bg-border mx-1" />
+              <div className="h-6 w-px bg-border mx-1 flex-shrink-0" />
 
               {/* History */}
               <button
                 type="button"
                 onClick={() => execCmd('undo')}
-                className="p-1.5 hover:bg-muted text-muted-foreground hover:text-foreground rounded cursor-pointer"
+                className="p-1.5 hover:bg-muted text-muted-foreground hover:text-foreground rounded cursor-pointer flex-shrink-0"
                 title="Undo"
               >
                 <Undo2 className="h-4 w-4" />
@@ -740,19 +751,19 @@ export const NotesView: React.FC = () => {
               <button
                 type="button"
                 onClick={() => execCmd('redo')}
-                className="p-1.5 hover:bg-muted text-muted-foreground hover:text-foreground rounded cursor-pointer"
+                className="p-1.5 hover:bg-muted text-muted-foreground hover:text-foreground rounded cursor-pointer flex-shrink-0"
                 title="Redo"
               >
                 <Redo2 className="h-4 w-4" />
               </button>
 
-              <div className="h-6 w-px bg-border mx-1" />
+              <div className="h-6 w-px bg-border mx-1 flex-shrink-0" />
 
               {/* Clear Formatting */}
               <button
                 type="button"
                 onClick={() => execCmd('removeFormat')}
-                className="p-1.5 hover:bg-muted text-muted-foreground hover:text-foreground rounded cursor-pointer"
+                className="p-1.5 hover:bg-muted text-muted-foreground hover:text-foreground rounded cursor-pointer flex-shrink-0"
                 title="Clear Formatting"
               >
                 <Eraser className="h-4 w-4" />

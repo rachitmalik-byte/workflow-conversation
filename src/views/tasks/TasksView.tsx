@@ -506,10 +506,10 @@ export const TasksView: React.FC = () => {
         /* Task Board Listings */
         <div className="space-y-4">
           {/* Tab Selector */}
-          <div className="flex items-center border border-border p-0.5 bg-muted/20 rounded-md self-start w-fit">
+          <div className="flex items-center border border-border p-0.5 bg-muted/20 rounded-md self-start w-full sm:w-fit overflow-x-auto scrollbar-none flex-nowrap flex-shrink-0">
             <button
               onClick={() => setActiveTab('all')}
-              className={`px-3 py-1.5 text-xs font-semibold rounded ${
+              className={`px-3 py-1.5 text-xs font-semibold rounded flex-shrink-0 ${
                 activeTab === 'all' ? 'bg-card shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'
               }`}
             >
@@ -517,7 +517,7 @@ export const TasksView: React.FC = () => {
             </button>
             <button
               onClick={() => setActiveTab('personal')}
-              className={`px-3 py-1.5 text-xs font-semibold rounded ${
+              className={`px-3 py-1.5 text-xs font-semibold rounded flex-shrink-0 ${
                 activeTab === 'personal' ? 'bg-card shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'
               }`}
             >
@@ -525,7 +525,7 @@ export const TasksView: React.FC = () => {
             </button>
             <button
               onClick={() => setActiveTab('assigned')}
-              className={`px-3 py-1.5 text-xs font-semibold rounded ${
+              className={`px-3 py-1.5 text-xs font-semibold rounded flex-shrink-0 ${
                 activeTab === 'assigned' ? 'bg-card shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'
               }`}
             >
@@ -533,7 +533,7 @@ export const TasksView: React.FC = () => {
             </button>
             <button
               onClick={() => setActiveTab('team')}
-              className={`px-3 py-1.5 text-xs font-semibold rounded ${
+              className={`px-3 py-1.5 text-xs font-semibold rounded flex-shrink-0 ${
                 activeTab === 'team' ? 'bg-card shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'
               }`}
             >

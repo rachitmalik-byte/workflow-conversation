@@ -1251,3 +1251,13 @@ input:focus, textarea:focus, select:focus {
   box-shadow: 0 0 0 2px hsl(var(--primary) / 0.15) !important;
 }
 
+/* Hide scrollbars utility */
+.scrollbar-none::-webkit-scrollbar {
+  display: none !important;
+}
+.scrollbar-none {
+  -ms-overflow-style: none !important;  /* IE and Edge */
+  scrollbar-width: none !important;  /* Firefox */
+}
+
+
