@@ -14,7 +14,15 @@ const supabaseUrl = storedUrl || envUrl || defaultUrl;
 const supabaseKey = storedKey || envKey || defaultKey;
 
 // Initialize client only if keys are present
-export const supabase = supabaseUrl && supabaseKey 
-  ? createClient(supabaseUrl, supabaseKey)
-  : null;
+export const supabase = (() => {
+  try {
+    return supabaseUrl && supabaseKey 
+      ? createClient(supabaseUrl, supabaseKey)
+      : null;
+  } catch (err) {
+    console.error('Failed to initialize Supabase client:', err);
+    return null;
+  }
+})();
+
 

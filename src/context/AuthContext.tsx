@@ -467,59 +467,111 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const loadProfileAndTeammates = async () => {
     try {
-      const allProfiles = await dbClient.getProfiles();
-      setProfiles([...allProfiles]);
+      if (dbClient.isSupabaseEnabled) {
+        // Enforce a fast 4-second timeout for queries on startup when Supabase is enabled
+        const allProfiles = await Promise.race([
+          dbClient.getProfiles(),
+          new Promise<never>((_, reject) => 
+            setTimeout(() => reject(new Error('Timeout loading profiles')), 4000)
+          )
+        ]);
+        setProfiles([...allProfiles]);
 
-      const user = await dbClient.getCurrentUser();
-      setCurrentUser(user);
+        const user = await Promise.race([
+          dbClient.getCurrentUser(),
+          new Promise<never>((_, reject) => 
+            setTimeout(() => reject(new Error('Timeout loading current user')), 4000)
+          )
+        ]);
+        setCurrentUser(user);
+      } else {
+        // Fast mock database loading
+        const allProfiles = await dbClient.getProfiles();
+        setProfiles([...allProfiles]);
+        const user = await dbClient.getCurrentUser();
+        setCurrentUser(user);
+      }
     } catch (err) {
-      console.error('Failed to load profile details:', err);
-      setCurrentUser(null);
+      console.warn('Failed to load profile details from live database, falling back to simulator mode:', err);
+      // Fail fast fallback: disable Supabase client and switch to mock mode
+      setIsSimulator(true);
+      dbClient.isSupabaseEnabled = false;
+      
+      try {
+        const allProfiles = await dbClient.getProfiles();
+        setProfiles([...allProfiles]);
+        const user = await dbClient.getCurrentUser();
+        setCurrentUser(user);
+      } catch (mockErr) {
+        console.error('Failed to load mock profiles/user:', mockErr);
+        setCurrentUser(null);
+      }
     }
   };
 
   useEffect(() => {
     // If supabase is configured, hook up authentication state listener
     if (supabase) {
-      // Fetch initial session on mount
-      supabase.auth.getSession().then(({ data: { session } }) => {
-        if (session) {
-          setIsSimulator(false);
-          if (session.provider_token) {
-            setGoogleAccessToken(session.provider_token);
-          }
-          loadProfileAndTeammates().then(() => setIsLoading(false));
-        } else {
-          setIsLoading(false);
-        }
-      });
+      // Fetch initial session on mount with a 4-second timeout race
+      const sessionPromise = supabase.auth.getSession();
+      const timeoutPromise = new Promise<{ data: { session: null } }>((resolve) => 
+        setTimeout(() => resolve({ data: { session: null } }), 4000)
+      );
 
-      const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-        if (event === 'TOKEN_REFRESHED') {
-          return;
-        }
-        // Only trigger loading state if we do not have a currentUser yet
-        // (prevents bootstrapping spinner on tab switching or focus recovery checks)
-        const showLoader = !currentUserRef.current;
-        if (showLoader) {
-          setIsLoading(true);
-        }
-        if (session) {
-          setIsSimulator(false);
-          if (session.provider_token) {
-            setGoogleAccessToken(session.provider_token);
+      Promise.race([sessionPromise, timeoutPromise])
+        .then(({ data: { session } }) => {
+          if (session) {
+            setIsSimulator(false);
+            if (session.provider_token) {
+              setGoogleAccessToken(session.provider_token);
+            }
+            loadProfileAndTeammates().then(() => setIsLoading(false));
+          } else {
+            setIsLoading(false);
           }
-          await loadProfileAndTeammates();
-        } else {
-          setCurrentUser(null);
-        }
-        if (showLoader) {
+        })
+        .catch((err) => {
+          console.error('Failed to get initial session, falling back to simulator:', err);
           setIsLoading(false);
-        }
-      });
+          setIsSimulator(true);
+          dbClient.isSupabaseEnabled = false;
+          loadProfileAndTeammates().then(() => setIsLoading(false));
+        });
+
+      let subscription: any;
+      try {
+        const { data } = supabase.auth.onAuthStateChange(async (event, session) => {
+          if (event === 'TOKEN_REFRESHED') {
+            return;
+          }
+          // Only trigger loading state if we do not have a currentUser yet
+          // (prevents bootstrapping spinner on tab switching or focus recovery checks)
+          const showLoader = !currentUserRef.current;
+          if (showLoader) {
+            setIsLoading(true);
+          }
+          if (session) {
+            setIsSimulator(false);
+            if (session.provider_token) {
+              setGoogleAccessToken(session.provider_token);
+            }
+            await loadProfileAndTeammates();
+          } else {
+            setCurrentUser(null);
+          }
+          if (showLoader) {
+            setIsLoading(false);
+          }
+        });
+        subscription = data?.subscription;
+      } catch (err) {
+        console.error('Failed to hook onAuthStateChange:', err);
+      }
 
       return () => {
-        subscription.unsubscribe();
+        if (subscription) {
+          subscription.unsubscribe();
+        }
       };
     } else {
       // In simulator mode, only load parameters if simulator is explicitly turned on
