@@ -49,10 +49,10 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
           'teammates': true,
           'upcoming-reminders': true,
           'recent-activity': true,
-          'pipeline-funnel': false,
+          'pipeline-funnel': true,
           'calendar-mini': false,
           'quote-of-the-day': false,
-          'team-presence': false,
+          'team-presence': true,
         }
       : {
           'specialist-metrics': true,
@@ -202,10 +202,10 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
           'teammates': true,
           'upcoming-reminders': true,
           'recent-activity': true,
-          'pipeline-funnel': false,
+          'pipeline-funnel': true,
           'calendar-mini': false,
           'quote-of-the-day': false,
-          'team-presence': false,
+          'team-presence': true,
         }
       : {
           'specialist-metrics': true,
@@ -840,39 +840,81 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
   };
 
   const renderTeammatesWidget = () => {
-    const employeeLeadDistribution: Record<string, number> = {};
-    leads.forEach((l) => {
-      (l.assigned_users || []).forEach((uid) => {
-        const name = getProfileName(uid);
-        employeeLeadDistribution[name] = (employeeLeadDistribution[name] || 0) + 1;
-      });
-    });
+    // Only show active specialist profiles for breakdown
+    const specialists = profiles.filter(p => p.role === 'growth_specialist' && p.status === 'active');
+
+    const getPresenceBadgeColor = (presence?: string) => {
+      switch (presence) {
+        case 'online': return 'bg-success';
+        case 'idle': return 'bg-warning';
+        case 'busy': return 'bg-danger';
+        case 'offline':
+        default:
+          return 'bg-slate-400';
+      }
+    };
 
     return (
       <div className="border border-border rounded-xl bg-card p-5 shadow-sm space-y-4 h-full">
         <div className="flex items-center justify-between border-b border-border/40 pb-2.5">
           <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
             <Users className="h-4 w-4 text-primary" />
-            <span>Teammate Portfolio Breakdown</span>
+            <span>Teammate Performance Overview</span>
           </h4>
+          <span className="text-[10px] text-muted-foreground font-semibold">Specialist Portfolios</span>
         </div>
 
-        <div className="space-y-3 pt-1 max-h-72 overflow-y-auto pr-1">
-          {Object.entries(employeeLeadDistribution).map(([name, count]) => (
-            <div key={name} className="flex items-center justify-between text-xs border-b border-border/40 pb-2 last:border-0 last:pb-0">
-              <div className="flex items-center gap-2">
-                <div className="h-5 w-5 bg-secondary text-white font-bold rounded flex items-center justify-center text-[9px] uppercase">
-                  {name.split(' ').map((n) => n[0]).join('')}
+        <div className="space-y-4 pt-1 max-h-80 overflow-y-auto pr-1">
+          {specialists.map((p) => {
+            const assignedLeads = leads.filter(l => l.assigned_users?.includes(p.id));
+            const leadCount = assignedLeads.length;
+            const wonLeads = assignedLeads.filter(l => l.status === 'closed_won').length;
+            const convRate = leadCount ? Math.round((wonLeads / leadCount) * 100) : 0;
+            const openTasks = tasks.filter(t => t.assignee_id === p.id && t.status !== 'done').length;
+
+            return (
+              <div key={p.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs border-b border-border/40 pb-3 last:border-0 last:pb-0">
+                <div className="flex items-center gap-2">
+                  <div className="relative inline-block h-7 w-7 rounded-full">
+                    <div className="flex h-full w-full items-center justify-center rounded-full bg-secondary text-[10px] font-bold text-white uppercase">
+                      {p.full_name.split(' ').map((n) => n[0]).join('')}
+                    </div>
+                    <span
+                      className={`absolute bottom-0 right-0 block h-2 w-2 rounded-full ring-1 ring-card ${getPresenceBadgeColor(p.presence)}`}
+                    />
+                  </div>
+                  <div>
+                    <p className="font-bold text-foreground leading-normal">{p.full_name}</p>
+                    <p className="text-[9px] text-muted-foreground leading-none">{p.designation || 'Specialist'}</p>
+                  </div>
                 </div>
-                <span className="font-medium text-foreground">{name}</span>
+                
+                <div className="flex items-center gap-4">
+                  <div className="text-center">
+                    <p className="text-[9px] text-muted-foreground font-semibold uppercase leading-none">Leads</p>
+                    <span className="inline-block mt-1 bg-primary/10 text-primary px-2 py-0.5 rounded font-bold text-[10px]">
+                      {leadCount}
+                    </span>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-[9px] text-muted-foreground font-semibold uppercase leading-none">Open Tasks</p>
+                    <span className="inline-block mt-1 bg-warning/10 text-warning px-2 py-0.5 rounded font-bold text-[10px]">
+                      {openTasks}
+                    </span>
+                  </div>
+                  <div className="text-right min-w-[70px]">
+                    <p className="text-[9px] text-muted-foreground font-semibold uppercase leading-none">Conversion</p>
+                    <p className="font-bold text-foreground text-[10px] mt-1">{convRate}%</p>
+                    <div className="w-12 bg-muted h-1 rounded mt-1 overflow-hidden ml-auto">
+                      <div className="bg-success h-full" style={{ width: `${convRate}%` }} />
+                    </div>
+                  </div>
+                </div>
               </div>
-              <span className="bg-muted px-2 py-0.5 rounded font-semibold text-muted-foreground text-[10px]">
-                {count} leads
-              </span>
-            </div>
-          ))}
-          {Object.keys(employeeLeadDistribution).length === 0 && (
-            <p className="text-xs text-muted-foreground text-center py-4">No allocations logged.</p>
+            );
+          })}
+          {specialists.length === 0 && (
+            <p className="text-xs text-muted-foreground text-center py-4">No active Specialists found.</p>
           )}
         </div>
       </div>

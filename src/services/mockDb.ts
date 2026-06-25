@@ -57,6 +57,28 @@ export const MOCK_PROFILES: Profile[] = [
     presence: 'offline',
     created_at: new Date(Date.now() - 60 * 24 * 60 * 60 * 1000).toISOString(),
     updated_at: new Date(Date.now() - 60 * 24 * 60 * 60 * 1000).toISOString(),
+  },
+  {
+    id: 'specialist-5',
+    full_name: 'Arjab Jain',
+    email: 'arjab.jain@englivo.com',
+    role: 'growth_specialist',
+    status: 'active',
+    designation: 'Outbound Growth Specialist',
+    presence: 'online',
+    created_at: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString(),
+    updated_at: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString(),
+  },
+  {
+    id: 'specialist-6',
+    full_name: 'Rachit Malik',
+    email: 'rachit.malik@vaidikedu.com',
+    role: 'growth_specialist',
+    status: 'active',
+    designation: 'Technical Integration Lead',
+    presence: 'online',
+    created_at: new Date(Date.now() - 8 * 24 * 60 * 60 * 1000).toISOString(),
+    updated_at: new Date(Date.now() - 8 * 24 * 60 * 60 * 1000).toISOString(),
   }
 ];
 
@@ -499,9 +521,9 @@ class MemoryDB {
       if (stored) return JSON.parse(stored);
       const deletedRaw = localStorage.getItem('relayhq_deleted_profiles');
       const deletedIds = deletedRaw ? JSON.parse(deletedRaw) : [];
-      return MOCK_PROFILES.filter(p => !deletedIds.includes(p.id) && p.email?.toLowerCase() !== 'arjab.jain@englivo.com');
+      return MOCK_PROFILES.filter(p => !deletedIds.includes(p.id));
     } catch {
-      return MOCK_PROFILES.filter(p => p.email?.toLowerCase() !== 'arjab.jain@englivo.com');
+      return [...MOCK_PROFILES];
     }
   })();
   leads = (() => {
