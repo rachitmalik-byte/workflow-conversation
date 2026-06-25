@@ -236,29 +236,30 @@ ALTER TABLE public.tasks ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Tasks Select" ON public.tasks FOR SELECT TO authenticated
     USING (
         public.is_head() 
-        OR creator_id = (SELECT auth.uid()) 
-        OR assignee_id = (SELECT auth.uid()) 
+        OR creator_id = auth.uid() 
+        OR assignee_id = auth.uid() 
+        OR auth.uid() = ANY(assignee_ids)
         OR type = 'team'
     );
 
 CREATE POLICY "Tasks Insert" ON public.tasks FOR INSERT TO authenticated
     WITH CHECK (
-        creator_id = (SELECT auth.uid())
+        creator_id = auth.uid()
     );
 
 CREATE POLICY "Tasks Update" ON public.tasks FOR UPDATE TO authenticated
     USING (
         public.is_head() 
-        OR creator_id = (SELECT auth.uid()) 
-        OR assignee_id = (SELECT auth.uid())
+        OR creator_id = auth.uid() 
+        OR assignee_id = auth.uid()
     )
     WITH CHECK (true);
 
 CREATE POLICY "Tasks Delete" ON public.tasks FOR DELETE TO authenticated
     USING (
         public.is_head() 
-        OR creator_id = (SELECT auth.uid()) 
-        OR assignee_id = (SELECT auth.uid())
+        OR creator_id = auth.uid() 
+        OR assignee_id = auth.uid()
     );
 
 
