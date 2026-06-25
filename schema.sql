@@ -252,6 +252,7 @@ CREATE POLICY "Tasks Update" ON public.tasks FOR UPDATE TO authenticated
         public.is_head() 
         OR creator_id = auth.uid() 
         OR assignee_id = auth.uid()
+        OR auth.uid() = ANY(assignee_ids)
     )
     WITH CHECK (true);
 
@@ -260,6 +261,7 @@ CREATE POLICY "Tasks Delete" ON public.tasks FOR DELETE TO authenticated
         public.is_head() 
         OR creator_id = auth.uid() 
         OR assignee_id = auth.uid()
+        OR auth.uid() = ANY(assignee_ids)
     );
 
 
