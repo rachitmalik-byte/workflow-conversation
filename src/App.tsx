@@ -41,8 +41,10 @@ const MainAppContent: React.FC = () => {
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
   const [isShortcutsGuideOpen, setIsShortcutsGuideOpen] = useState(false);
   
-  // Custom router state
+  // Custom router state synchronized with browser URL hash to enable browser back/forward button support
   const [currentView, setCurrentViewInternal] = useState(() => {
+    const hash = window.location.hash.substring(1);
+    if (hash) return hash;
     return localStorage.getItem('relayhq_current_view') || 'dashboard';
   });
   const [showTutorial, setShowTutorial] = useState(() => {
@@ -50,11 +52,8 @@ const MainAppContent: React.FC = () => {
   });
   const setCurrentView = (view: string) => {
     const cleaned = view.startsWith('/') ? view.substring(1) : view;
-    setCurrentViewInternal(cleaned);
-    localStorage.setItem('relayhq_current_view', cleaned);
-    if (cleaned.startsWith('leads')) {
-      localStorage.setItem('relayhq_last_leads_subview', cleaned);
-    }
+    // Changing the hash triggers the 'hashchange' event listener below
+    window.location.hash = `#${cleaned}`;
   };
   
   // Mobile sidebar states
@@ -64,6 +63,34 @@ const MainAppContent: React.FC = () => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => 
     localStorage.getItem('relayhq_sidebar_collapsed') === 'true'
   );
+
+  // Sync state on mount and listen to window hash changes to make back/forward buttons work
+  useEffect(() => {
+    const initialHash = window.location.hash.substring(1);
+    if (initialHash) {
+      if (initialHash !== currentView) {
+        setCurrentViewInternal(initialHash);
+      }
+    } else {
+      window.location.hash = `#${currentView}`;
+    }
+
+    const handleHashChange = () => {
+      const hash = window.location.hash.substring(1);
+      if (hash) {
+        setCurrentViewInternal(hash);
+        localStorage.setItem('relayhq_current_view', hash);
+        if (hash.startsWith('leads')) {
+          localStorage.setItem('relayhq_last_leads_subview', hash);
+        }
+      }
+    };
+
+    window.addEventListener('hashchange', handleHashChange);
+    return () => {
+      window.removeEventListener('hashchange', handleHashChange);
+    };
+  }, []);
 
   // Active Due Reminders Alarm system
   const [dueReminders, setDueReminders] = useState<Reminder[]>([]);

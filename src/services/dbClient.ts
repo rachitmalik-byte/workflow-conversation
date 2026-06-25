@@ -724,12 +724,59 @@ class DBClient {
       return;
     }
 
-    // Supabase hard deletion. Clean up child dependencies to avoid constraint violations.
-    await client.from('lead_assigned_users').delete().eq('user_id', id);
-    await client.from('tasks').delete().or(`assignee_id.eq.${id},creator_id.eq.${id}`);
-    await client.from('reminders').delete().eq('creator_id', id);
-    await client.from('messages').delete().or(`sender_id.eq.${id},receiver_id.eq.${id}`);
-    await client.from('profiles').delete().eq('id', id);
+    // Clean up child dependencies sequentially and check for errors to avoid silent failures due to RLS or constraints
+    
+    // 1. Delete notifications
+    const { error: errNotifs } = await client.from('notifications').delete().eq('user_id', id);
+    if (errNotifs) throw errNotifs;
+
+    // 2. Delete channel members
+    const { error: errMembers } = await client.from('channel_members').delete().eq('user_id', id);
+    if (errMembers) throw errMembers;
+
+    // 3. Delete message read receipts
+    const { error: errReceipts } = await client.from('message_read_receipts').delete().eq('user_id', id);
+    if (errReceipts) throw errReceipts;
+
+    // 4. Delete messages (sent or received)
+    const { error: errMessages } = await client.from('messages').delete().or(`sender_id.eq.${id},receiver_id.eq.${id}`);
+    if (errMessages) throw errMessages;
+
+    // 5. Update channels created by this user to set created_by to null
+    const { error: errChannels } = await client.from('channels').update({ created_by: null }).eq('created_by', id);
+    if (errChannels) throw errChannels;
+
+    // 6. Delete personal notes
+    const { error: errNotes } = await client.from('personal_notes').delete().eq('creator_id', id);
+    if (errNotes) throw errNotes;
+
+    // 7. Delete reminders
+    const { error: errReminders } = await client.from('reminders').delete().eq('creator_id', id);
+    if (errReminders) throw errReminders;
+
+    // 8. Delete task assignments and creators
+    const { error: errTasks } = await client.from('tasks').delete().or(`assignee_id.eq.${id},creator_id.eq.${id}`);
+    if (errTasks) throw errTasks;
+
+    // 9. Delete lead updates
+    const { error: errUpdates } = await client.from('lead_updates').delete().eq('user_id', id);
+    if (errUpdates) throw errUpdates;
+
+    // 10. Delete lead attachments
+    const { error: errAttach } = await client.from('lead_attachments').delete().eq('uploaded_by', id);
+    if (errAttach) throw errAttach;
+
+    // 11. Delete lead assignments
+    const { error: errAssigned } = await client.from('lead_assigned_users').delete().eq('user_id', id);
+    if (errAssigned) throw errAssigned;
+
+    // 12. Delete leads created by this user
+    const { error: errLeads } = await client.from('leads').delete().eq('created_by', id);
+    if (errLeads) throw errLeads;
+
+    // 13. Finally delete the profile itself
+    const { error: errProfile } = await client.from('profiles').delete().eq('id', id);
+    if (errProfile) throw errProfile;
   }
 
   // Personal Notes CRUD

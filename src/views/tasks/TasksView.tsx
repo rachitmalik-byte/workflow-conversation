@@ -2,13 +2,17 @@ import React, { useState, useEffect } from 'react';
 import { dbClient } from '../../services/dbClient';
 import { useAuth } from '../../context/AuthContext';
 import type { Task, TaskPriority, TaskStatus, TaskType } from '../../types/database';
-import { AlertCircle, CheckSquare, Clock, Plus, Trash2, Paperclip } from 'lucide-react';
+import { AlertCircle, CheckSquare, Clock, Plus, Trash2, Paperclip, X, Edit2, Lock, RefreshCw } from 'lucide-react';
 
 export const TasksView: React.FC = () => {
   const { currentUser, profiles } = useAuth();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [activeTab, setActiveTab] = useState<'all' | 'personal' | 'assigned' | 'team'>(() => {
     return (localStorage.getItem('relayhq_tasks_active_tab') as any) || 'all';
+  });
+  const filteredTasks = tasks.filter((t) => {
+    if (activeTab === 'all') return true;
+    return t.type === activeTab;
   });
   
   // Creation form states
@@ -30,10 +34,124 @@ export const TasksView: React.FC = () => {
   const [recurrenceEndDate, setRecurrenceEndDate] = useState('');
   const [selectedTaskIndex, setSelectedTaskIndex] = useState(-1);
 
+  // Editing form states
+  const [isEditing, setIsEditing] = useState(false);
+  const [editTitle, setEditTitle] = useState('');
+  const [editDescription, setEditDescription] = useState('');
+  const [editPriority, setEditPriority] = useState<TaskPriority>('medium');
+  const [editType, setEditType] = useState<TaskType>('personal');
+  const [editAssigneeIds, setEditAssigneeIds] = useState<string[]>([]);
+  const [editAssigneeSearchText, setEditAssigneeSearchText] = useState('');
+  const [editDeadline, setEditDeadline] = useState('');
+  const [editOffsetsInput, setEditOffsetsInput] = useState('');
+  const [editTaskAttachments, setEditTaskAttachments] = useState<{ name: string; url: string }[]>([]);
+  const [editAttachmentName, setEditAttachmentName] = useState('');
+  const [editRecurrenceType, setEditRecurrenceType] = useState<'none' | 'daily' | 'weekly' | 'monthly' | 'custom'>('none');
+  const [editRecurrenceInterval, setEditRecurrenceInterval] = useState(1);
+  const [editRecurrenceEndDate, setEditRecurrenceEndDate] = useState('');
+  const [editError, setEditError] = useState<string | null>(null);
+
   useEffect(() => {
     localStorage.setItem('relayhq_tasks_active_tab', activeTab);
     setSelectedTaskIndex(-1); // Reset highlight when changing tab
   }, [activeTab]);
+
+  const selectedTask = selectedTaskIndex >= 0 && selectedTaskIndex < filteredTasks.length 
+    ? filteredTasks[selectedTaskIndex] 
+    : null;
+
+  useEffect(() => {
+    if (selectedTask) {
+      setEditTitle(selectedTask.title);
+      setEditDescription(selectedTask.description || '');
+      setEditPriority(selectedTask.priority);
+      setEditType(selectedTask.type);
+      setEditAssigneeIds(selectedTask.assignee_ids || (selectedTask.assignee_id ? [selectedTask.assignee_id] : []));
+      setEditDeadline(selectedTask.deadline ? new Date(selectedTask.deadline).toISOString().substring(0, 16) : '');
+      setEditOffsetsInput(selectedTask.reminder_offsets ? selectedTask.reminder_offsets.join(', ') : '');
+      setEditTaskAttachments(selectedTask.attachments || []);
+      setEditRecurrenceType(selectedTask.recurrence_type || 'none');
+      setEditRecurrenceInterval(selectedTask.recurrence_interval || 1);
+      setEditRecurrenceEndDate(selectedTask.recurrence_end_date ? selectedTask.recurrence_end_date.substring(0, 10) : '');
+      setEditError(null);
+      setIsEditing(false);
+    } else {
+      setIsEditing(false);
+    }
+  }, [selectedTask?.id]);
+
+  const handleRemoveAttachment = (idxToRemove: number) => {
+    setTaskAttachments(taskAttachments.filter((_, idx) => idx !== idxToRemove));
+  };
+
+  const handleEditAddAttachment = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editAttachmentName.trim()) return;
+    setEditTaskAttachments([...editTaskAttachments, { name: editAttachmentName.trim(), url: '#' }]);
+    setEditAttachmentName('');
+  };
+
+  const handleEditRemoveAttachment = (idxToRemove: number) => {
+    setEditTaskAttachments(editTaskAttachments.filter((_, idx) => idx !== idxToRemove));
+  };
+
+  const handleUpdateTask = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedTask) return;
+    if (!editTitle.trim()) {
+      setEditError('Task title is required.');
+      return;
+    }
+    if (editType === 'assigned' && editAssigneeIds.length === 0) {
+      setEditError('Please assign at least one teammate.');
+      return;
+    }
+
+    try {
+      const offsets = editOffsetsInput
+        .split(',')
+        .map((x) => parseInt(x.trim(), 10))
+        .filter((x) => !isNaN(x));
+
+      const selectedAssignees = editType === 'personal'
+        ? [currentUser?.id || '']
+        : editType === 'assigned'
+        ? editAssigneeIds
+        : [];
+
+      await dbClient.updateTask(selectedTask.id, {
+        title: editTitle.trim(),
+        description: editDescription.trim(),
+        assignee_id: selectedAssignees[0] || undefined,
+        assignee_ids: selectedAssignees,
+        priority: editPriority,
+        type: editType,
+        deadline: editDeadline ? new Date(editDeadline).toISOString() : undefined,
+        reminder_offsets: offsets,
+        attachments: editTaskAttachments,
+        recurrence_type: editRecurrenceType,
+        recurrence_interval: editRecurrenceInterval,
+        recurrence_end_date: editRecurrenceEndDate ? new Date(editRecurrenceEndDate).toISOString() : undefined
+      });
+
+      setEditError(null);
+      setIsEditing(false);
+      fetchTasks();
+    } catch (err: any) {
+      setEditError(err.message || 'Failed to update task.');
+    }
+  };
+
+  const handleDeleteTaskFromPreview = async (id: string) => {
+    if (!window.confirm('Delete this task permanently?')) return;
+    try {
+      await dbClient.deleteTask(id);
+      setSelectedTaskIndex(-1);
+      fetchTasks();
+    } catch (err: any) {
+      alert(err.message || 'Failed to delete task.');
+    }
+  };
 
   const [error, setError] = useState<string | null>(null);
 
@@ -149,6 +267,7 @@ export const TasksView: React.FC = () => {
     if (!window.confirm('Delete this task permanently?')) return;
     try {
       await dbClient.deleteTask(id);
+      setSelectedTaskIndex(-1);
       fetchTasks();
     } catch (err: any) {
       alert(err.message || 'Failed to delete task.');
@@ -167,10 +286,7 @@ export const TasksView: React.FC = () => {
     return profiles.find((p) => p.id === uid)?.full_name || 'Teammate';
   };
 
-  const filteredTasks = tasks.filter((t) => {
-    if (activeTab === 'all') return true;
-    return t.type === activeTab;
-  });
+
 
   // Listen to keyboard command events
   useEffect(() => {
@@ -476,9 +592,17 @@ export const TasksView: React.FC = () => {
               
               <div className="flex flex-wrap gap-2">
                 {taskAttachments.map((f, i) => (
-                  <span key={i} className="flex items-center gap-1 bg-muted px-2.5 py-1 rounded-full text-xs text-foreground">
+                  <span key={i} className="flex items-center gap-1.5 bg-muted px-2.5 py-1 rounded-full text-xs text-foreground">
                     <Paperclip className="h-3 w-3 text-muted-foreground" />
                     <span>{f.name}</span>
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveAttachment(i)}
+                      className="text-muted-foreground hover:text-danger rounded-full focus:outline-none ml-1 text-sm font-bold w-4 h-4 inline-flex items-center justify-center hover:bg-danger/10 transition-colors"
+                      title="Remove attachment"
+                    >
+                      ×
+                    </button>
                   </span>
                 ))}
               </div>
@@ -557,17 +681,21 @@ export const TasksView: React.FC = () => {
                   <div
                     key={task.id}
                     id={`task-card-${task.id}`}
-                    className={`border p-4 rounded-lg shadow-sm flex items-start gap-3 transition-all duration-200 ${
+                    onClick={() => setSelectedTaskIndex(idx)}
+                    className={`border p-4 rounded-lg shadow-sm flex items-start gap-3 transition-all duration-200 cursor-pointer ${
                       task.status === 'done' ? 'opacity-75 bg-muted/20' : 'bg-card'
                     } ${
                       isSelected 
                         ? 'border-primary ring-2 ring-primary/20 bg-primary/5 shadow-md scale-[1.01]' 
-                        : 'border-border'
+                        : 'border-border hover:border-primary/50 hover:shadow-md'
                     }`}
                   >
                     {/* Status Toggle Box */}
                     <button
-                      onClick={() => handleToggleStatus(task.id, task.status)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleToggleStatus(task.id, task.status);
+                      }}
                       className={`h-5 w-5 rounded border mt-0.5 flex-shrink-0 flex items-center justify-center transition-colors cursor-pointer ${
                         task.status === 'done'
                           ? 'bg-success border-success text-white'
@@ -677,7 +805,10 @@ export const TasksView: React.FC = () => {
                     </div>
 
                     <button
-                      onClick={() => handleDeleteTask(task.id)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDeleteTask(task.id);
+                      }}
                       className="p-1 hover:bg-muted text-muted-foreground hover:text-danger rounded transition-colors self-start cursor-pointer"
                       title="Delete task"
                     >
@@ -688,6 +819,450 @@ export const TasksView: React.FC = () => {
               })}
             </div>
           )}
+        </div>
+      )}
+
+      {/* Slide-over Drawer */}
+      {selectedTask && (
+        <div className="fixed inset-0 z-50 overflow-hidden" aria-labelledby="slide-over-title" role="dialog" aria-modal="true">
+          <div className="absolute inset-0 overflow-hidden">
+            {/* Backdrop */}
+            <div 
+              onClick={() => {
+                if (!isEditing || window.confirm('Discard unsaved changes?')) {
+                  setSelectedTaskIndex(-1);
+                }
+              }}
+              className="absolute inset-0 bg-background/50 backdrop-blur-sm transition-opacity"
+            ></div>
+
+            <div className="pointer-events-none fixed inset-y-0 right-0 flex max-w-full pl-10">
+              <div className="pointer-events-auto w-screen max-w-lg">
+                <div className="flex h-full flex-col overflow-y-auto bg-card border-l border-border shadow-2xl p-6 space-y-6">
+                  {/* Header */}
+                  <div className="flex items-center justify-between border-b border-border pb-4">
+                    <h3 className="text-lg font-bold text-foreground truncate max-w-[80%]">
+                      {isEditing ? 'Edit Task Details' : 'Task Details'}
+                    </h3>
+                    <button 
+                      onClick={() => {
+                        if (!isEditing || window.confirm('Discard unsaved changes?')) {
+                          setSelectedTaskIndex(-1);
+                        }
+                      }}
+                      className="p-1 hover:bg-muted text-muted-foreground hover:text-foreground rounded transition-colors"
+                    >
+                      <X className="h-5 w-5" />
+                    </button>
+                  </div>
+
+                  {isEditing ? (
+                    /* Edit Form inside Side-sheet */
+                    <form onSubmit={handleUpdateTask} className="space-y-4 flex-1">
+                      {editError && (
+                        <div className="flex items-center gap-2 bg-danger/10 border border-danger/20 p-3 rounded text-danger text-xs">
+                          <AlertCircle className="h-4 w-4" />
+                          <span>{editError}</span>
+                        </div>
+                      )}
+
+                      <div>
+                        <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1">
+                          Task Title *
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          value={editTitle}
+                          onChange={(e) => setEditTitle(e.target.value)}
+                          className="w-full text-sm bg-background border border-border text-foreground px-3 py-2 rounded focus:outline-none focus:border-primary"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1">
+                          Description
+                        </label>
+                        <textarea
+                          value={editDescription}
+                          onChange={(e) => setEditDescription(e.target.value)}
+                          rows={4}
+                          className="w-full text-sm bg-background border border-border text-foreground px-3 py-2 rounded focus:outline-none focus:border-primary resize-y"
+                        />
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1">
+                            Scope / Type
+                          </label>
+                          <select
+                            value={editType}
+                            onChange={(e) => setEditType(e.target.value as TaskType)}
+                            className="w-full text-xs bg-background border border-border text-foreground px-3 py-2 rounded focus:outline-none focus:border-primary cursor-pointer font-medium"
+                          >
+                            <option value="personal">Personal Item</option>
+                            <option value="assigned">Assigned Teammate</option>
+                            <option value="team">Team Announcement</option>
+                          </select>
+                        </div>
+
+                        <div>
+                          <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1">
+                            Task Priority
+                          </label>
+                          <select
+                            value={editPriority}
+                            onChange={(e) => setEditPriority(e.target.value as TaskPriority)}
+                            className="w-full text-xs bg-background border border-border text-foreground px-3 py-2 rounded focus:outline-none focus:border-primary cursor-pointer font-medium"
+                          >
+                            <option value="low">Low</option>
+                            <option value="medium">Medium</option>
+                            <option value="high">High</option>
+                          </select>
+                        </div>
+                      </div>
+
+                      {editType === 'assigned' && (
+                        <div className="space-y-2">
+                          <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                            Assign To Team Members *
+                          </label>
+                          <input
+                            type="text"
+                            placeholder="Search teammates by name..."
+                            value={editAssigneeSearchText}
+                            onChange={(e) => setEditAssigneeSearchText(e.target.value)}
+                            className="w-full text-xs bg-background border border-border text-foreground px-3 py-2 rounded-lg focus:outline-none focus:border-primary mb-2"
+                          />
+                          <div className="max-h-40 overflow-y-auto border border-border rounded-lg p-2.5 space-y-2 bg-background/50">
+                            {profiles
+                              .filter((p) => p.status === 'active' && p.full_name.toLowerCase().includes(editAssigneeSearchText.toLowerCase()))
+                              .map((p) => {
+                                const isChecked = editAssigneeIds.includes(p.id);
+                                return (
+                                  <label key={p.id} className="flex items-center gap-2 text-xs font-medium text-foreground cursor-pointer hover:bg-muted/40 p-1.5 rounded transition-colors">
+                                    <input
+                                      type="checkbox"
+                                      checked={isChecked}
+                                      onChange={() => {
+                                        if (isChecked) {
+                                          setEditAssigneeIds(editAssigneeIds.filter(id => id !== p.id));
+                                        } else {
+                                          setEditAssigneeIds([...editAssigneeIds, p.id]);
+                                        }
+                                      }}
+                                      className="h-3.5 w-3.5 rounded border-border text-primary focus:ring-primary cursor-pointer"
+                                    />
+                                    <span>{p.full_name} ({p.role === 'head' ? 'Head' : 'Specialist'})</span>
+                                  </label>
+                                );
+                              })}
+                          </div>
+                        </div>
+                      )}
+
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1">
+                            Due Date
+                          </label>
+                          <input
+                            type="datetime-local"
+                            value={editDeadline}
+                            onChange={(e) => setEditDeadline(e.target.value)}
+                            className="w-full text-xs bg-background border border-border text-foreground px-3 py-2 rounded focus:outline-none focus:border-primary cursor-pointer font-medium"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1">
+                            Reminders (offsets)
+                          </label>
+                          <input
+                            type="text"
+                            value={editOffsetsInput}
+                            onChange={(e) => setEditOffsetsInput(e.target.value)}
+                            placeholder="e.g. 15, 30"
+                            className="w-full text-xs bg-background border border-border text-foreground px-3 py-2 rounded focus:outline-none focus:border-primary font-medium"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Recurrence Options */}
+                      <div className="grid grid-cols-3 gap-3 border-t border-border/40 pt-3">
+                        <div>
+                          <label className="block text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">
+                            🔄 Recurrence
+                          </label>
+                          <select
+                            value={editRecurrenceType}
+                            onChange={(e) => setEditRecurrenceType(e.target.value as any)}
+                            className="w-full text-[10px] bg-background border border-border text-foreground px-2 py-2 rounded focus:outline-none focus:border-primary cursor-pointer font-bold"
+                          >
+                            <option value="none">None</option>
+                            <option value="daily">Daily</option>
+                            <option value="weekly">Weekly</option>
+                            <option value="monthly">Monthly</option>
+                          </select>
+                        </div>
+
+                        {editRecurrenceType !== 'none' && (
+                          <>
+                            <div>
+                              <label className="block text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">
+                                Every
+                              </label>
+                              <input
+                                type="number"
+                                min={1}
+                                value={editRecurrenceInterval}
+                                onChange={(e) => setEditRecurrenceInterval(parseInt(e.target.value, 10) || 1)}
+                                className="w-full text-[10px] bg-background border border-border text-foreground px-2 py-2 rounded focus:outline-none focus:border-primary font-bold"
+                              />
+                            </div>
+
+                            <div>
+                              <label className="block text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">
+                                End Date
+                              </label>
+                              <input
+                                type="date"
+                                value={editRecurrenceEndDate}
+                                onChange={(e) => setEditRecurrenceEndDate(e.target.value)}
+                                className="w-full text-[10px] bg-background border border-border text-foreground px-2 py-1.5 rounded focus:outline-none focus:border-primary cursor-pointer font-bold"
+                              />
+                            </div>
+                          </>
+                        )}
+                      </div>
+
+                      {/* Attachments Section */}
+                      <div className="border-t border-border/40 pt-3">
+                        <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1">
+                          Attachments
+                        </label>
+                        <div className="flex gap-2 mb-2">
+                          <input
+                            type="text"
+                            value={editAttachmentName}
+                            onChange={(e) => setEditAttachmentName(e.target.value)}
+                            placeholder="Add asset filename..."
+                            className="flex-1 text-xs bg-background border border-border text-foreground px-3 py-1.5 rounded focus:outline-none focus:border-primary"
+                          />
+                          <button
+                            type="button"
+                            onClick={handleEditAddAttachment}
+                            className="px-3 py-1.5 bg-muted border border-border text-foreground hover:bg-muted/80 rounded text-xs font-semibold"
+                          >
+                            Add
+                          </button>
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                          {editTaskAttachments.map((f, i) => (
+                            <span key={i} className="flex items-center gap-1.5 bg-muted px-2.5 py-1 rounded-full text-xs text-foreground">
+                              <Paperclip className="h-3 w-3 text-muted-foreground" />
+                              <span>{f.name}</span>
+                              <button
+                                type="button"
+                                onClick={() => handleEditRemoveAttachment(i)}
+                                className="text-muted-foreground hover:text-danger rounded-full focus:outline-none ml-1 text-sm font-bold w-4 h-4 inline-flex items-center justify-center hover:bg-danger/10 transition-colors"
+                              >
+                                ×
+                              </button>
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Footer Actions */}
+                      <div className="flex items-center justify-end gap-3 pt-4 border-t border-border">
+                        <button
+                          type="button"
+                          onClick={() => setIsEditing(false)}
+                          className="px-4 py-2 text-xs font-semibold text-muted-foreground hover:bg-muted rounded transition-colors"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          type="submit"
+                          className="px-4 py-2 text-xs font-semibold text-primary-foreground bg-primary hover:bg-primary/95 rounded transition-colors"
+                        >
+                          Save Changes
+                        </button>
+                      </div>
+                    </form>
+                  ) : (
+                    /* Read Mode View */
+                    <div className="space-y-6 flex-1">
+                      {/* Priority, Type, and Status Badges */}
+                      <div className="flex flex-wrap gap-2 items-center">
+                        <span className={`px-2 py-0.5 rounded text-xs font-bold uppercase ${
+                          selectedTask.priority === 'high' ? 'bg-danger/10 text-danger' :
+                          selectedTask.priority === 'medium' ? 'bg-warning/10 text-warning' :
+                          'bg-muted text-muted-foreground'
+                        }`}>
+                          {selectedTask.priority} Priority
+                        </span>
+
+                        <span className="bg-muted px-2 py-0.5 rounded text-xs font-bold uppercase text-muted-foreground">
+                          {selectedTask.type} Scope
+                        </span>
+
+                        <span className={`px-2 py-0.5 rounded text-xs font-bold uppercase ${
+                          selectedTask.status === 'done' ? 'bg-success/15 text-success' :
+                          selectedTask.status === 'in_progress' ? 'bg-primary/15 text-primary' :
+                          'bg-muted text-muted-foreground'
+                        }`}>
+                          Status: {selectedTask.status.replace('_', ' ')}
+                        </span>
+                      </div>
+
+                      {/* Title */}
+                      <div>
+                        <h4 className="text-lg font-extrabold text-foreground break-words leading-tight">
+                          {selectedTask.title}
+                        </h4>
+                        <p className="text-[10px] text-muted-foreground mt-1">
+                          Created by: <span className="font-semibold">{getProfileName(selectedTask.creator_id)}</span>
+                        </p>
+                      </div>
+
+                      {/* Description */}
+                      <div className="space-y-1">
+                        <h5 className="text-xs font-bold text-muted-foreground uppercase tracking-wide">Description</h5>
+                        <div className="p-3 bg-muted/20 border border-border/50 rounded-lg text-sm text-foreground break-words leading-relaxed whitespace-pre-wrap">
+                          {selectedTask.description || <span className="italic text-muted-foreground">No description provided.</span>}
+                        </div>
+                      </div>
+
+                      {/* Details (Deadline, Recurrence, Reminders) */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 border-t border-b border-border/40 py-4">
+                        <div className="space-y-1">
+                          <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wide block">Due Date</span>
+                          <span className="flex items-center gap-1.5 text-xs text-foreground font-semibold">
+                            <Clock className="h-3.5 w-3.5 text-muted-foreground" />
+                            {selectedTask.deadline ? (
+                              <span>{new Date(selectedTask.deadline).toLocaleString()}</span>
+                            ) : (
+                              <span className="text-muted-foreground italic font-normal">No deadline set</span>
+                            )}
+                          </span>
+                        </div>
+
+                        <div className="space-y-1">
+                          <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wide block">Recurrence</span>
+                          <span className="flex items-center gap-1.5 text-xs text-foreground font-semibold">
+                            <RefreshCw className="h-3.5 w-3.5 text-muted-foreground" />
+                            {selectedTask.recurrence_type && selectedTask.recurrence_type !== 'none' ? (
+                              <span className="uppercase text-[11px]">
+                                {selectedTask.recurrence_type} {selectedTask.recurrence_interval && selectedTask.recurrence_interval > 1 ? `(every ${selectedTask.recurrence_interval})` : ''}
+                              </span>
+                            ) : (
+                              <span className="text-muted-foreground italic font-normal">One-time event</span>
+                            )}
+                          </span>
+                        </div>
+
+                        <div className="space-y-1">
+                          <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wide block">Reminder offsets</span>
+                          <span className="text-xs text-foreground font-semibold">
+                            {selectedTask.reminder_offsets && selectedTask.reminder_offsets.length > 0 ? (
+                              <span>{selectedTask.reminder_offsets.map(o => `${o} mins`).join(', ')} before</span>
+                            ) : (
+                              <span className="text-muted-foreground italic font-normal">No reminder alerts configured</span>
+                            )}
+                          </span>
+                        </div>
+
+                        <div className="space-y-1">
+                          <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wide block">Assignees</span>
+                          <div className="flex flex-wrap gap-1 mt-1">
+                            {selectedTask.type === 'personal' ? (
+                              <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-primary/10 border border-primary/20 text-[10px] font-bold text-primary">
+                                Personal (Self)
+                              </span>
+                            ) : selectedTask.assignee_ids && selectedTask.assignee_ids.length > 0 ? (
+                              selectedTask.assignee_ids.map((uid) => {
+                                const name = getProfileName(uid);
+                                return (
+                                  <span key={uid} className="inline-flex items-center px-2 py-0.5 rounded-full bg-primary/10 border border-primary/20 text-[10px] font-bold text-primary">
+                                    {name}
+                                  </span>
+                                );
+                              })
+                            ) : selectedTask.assignee_id ? (
+                              <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-primary/10 border border-primary/20 text-[10px] font-bold text-primary">
+                                {getProfileName(selectedTask.assignee_id)}
+                              </span>
+                            ) : (
+                              <span className="text-xs text-muted-foreground italic font-normal">Unassigned</span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Attachments */}
+                      {selectedTask.attachments && selectedTask.attachments.length > 0 && (
+                        <div className="space-y-2">
+                          <h5 className="text-xs font-bold text-muted-foreground uppercase tracking-wide">Attachments</h5>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                            {selectedTask.attachments.map((file, idx) => (
+                              <a
+                                key={idx}
+                                href={file.url}
+                                className="flex items-center gap-2 p-2 border border-border/80 hover:border-primary/50 hover:bg-primary/5 rounded-lg text-xs text-foreground font-medium transition-colors"
+                              >
+                                <Paperclip className="h-4 w-4 text-muted-foreground" />
+                                <span className="truncate">{file.name}</span>
+                              </a>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Edit/Delete controls for Creator/Head */}
+                      <div className="border-t border-border/40 pt-4 flex items-center justify-between gap-3">
+                        {currentUser && (currentUser.role === 'head' || selectedTask.creator_id === currentUser.id) ? (
+                          <>
+                            <div className="flex gap-2">
+                              <button
+                                onClick={() => setIsEditing(true)}
+                                className="flex items-center gap-1.5 px-4 py-2 bg-primary text-primary-foreground hover:bg-primary/95 text-xs font-bold rounded shadow-sm transition-colors"
+                              >
+                                <Edit2 className="h-3.5 w-3.5" />
+                                <span>Edit Task</span>
+                              </button>
+                              <button
+                                onClick={() => handleDeleteTaskFromPreview(selectedTask.id)}
+                                className="flex items-center gap-1.5 px-3 py-2 border border-border text-muted-foreground hover:text-danger hover:bg-danger/5 text-xs font-semibold rounded transition-colors"
+                              >
+                                <Trash2 className="h-3.5 w-3.5" />
+                                <span>Delete</span>
+                              </button>
+                            </div>
+                            <button
+                              onClick={() => {
+                                handleToggleStatus(selectedTask.id, selectedTask.status);
+                              }}
+                              className="px-3 py-2 bg-muted hover:bg-muted/80 text-foreground text-xs font-bold rounded transition-colors"
+                            >
+                              Toggle Status
+                            </button>
+                          </>
+                        ) : (
+                          <div className="flex items-center gap-1.5 text-xs text-muted-foreground italic">
+                            <Lock className="h-3.5 w-3.5 text-muted-foreground/60" />
+                            <span>Read-only: only creator or heads can edit this task.</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       )}
     </div>
