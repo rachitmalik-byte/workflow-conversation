@@ -24,23 +24,33 @@ class DBClient {
 
     const emailLower = user.email?.toLowerCase() || '';
     const headEmails = [
+      'ashish.garg@vaidikedu.com',
+      'ashish.garg@vaidikedu.in',
       'sumit.kushwah@vaidikedu.com',
       'sumit.kushwah@vaidikedu.in',
       'mahima.gupta@vaidikedu.com',
-      'mahima.gupta@vaidikedu.in'
+      'mahima.gupta@vaidikedu.in',
+      'rachit.malik@vaidikedu.com',
+      'rachit.malik@vaidik.edu',
+      'arjab.jain@vaidikedu.com',
+      'arjab.jain@englivo.com'
     ];
     const isHead = headEmails.includes(emailLower);
+    const isCEO = emailLower.includes('ashish.garg');
 
     const { data, error } = await client.from('profiles').select('*').eq('id', user.id).single();
     if (error || !data) {
       // Fallback: create profile if authenticated but missing profile record
+      const defaultDesignation = isCEO 
+        ? 'Chief Executive Officer' 
+        : (isHead ? 'Department Head' : '');
       const newProfile: Profile = {
         id: user.id,
         full_name: user.email?.split('@')[0] || 'Teammate',
         email: user.email || '',
         role: isHead ? 'head' : 'growth_specialist',
         status: 'active',
-        designation: isHead ? 'Department Head' : '', // Empty designation triggers role/designation setup for Google sign-in
+        designation: defaultDesignation,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       };
@@ -49,19 +59,29 @@ class DBClient {
     }
 
     // Auto-assign head role and designation for specific emails if not already set correctly
-    if (isHead && (data.role !== 'head' || !data.designation)) {
-      const updates: Partial<Profile> = {};
-      if (data.role !== 'head') updates.role = 'head';
-      if (!data.designation) updates.designation = 'Department Head';
-      
-      const { data: updated, error: updError } = await client
-        .from('profiles')
-        .update(updates)
-        .eq('id', user.id)
-        .select()
-        .single();
-      if (!updError && updated) {
-        return updated;
+    if (isHead) {
+      const needsRoleUpdate = data.role !== 'head';
+      const needsCeoDesignation = isCEO && (!data.designation || data.designation !== 'Chief Executive Officer');
+      const needsHeadDesignation = !data.designation;
+
+      if (needsRoleUpdate || needsCeoDesignation || needsHeadDesignation) {
+        const updates: Partial<Profile> = {};
+        if (needsRoleUpdate) updates.role = 'head';
+        if (needsCeoDesignation) {
+          updates.designation = 'Chief Executive Officer';
+        } else if (needsHeadDesignation) {
+          updates.designation = 'Department Head';
+        }
+
+        const { data: updated, error: updError } = await client
+          .from('profiles')
+          .update(updates)
+          .eq('id', user.id)
+          .select()
+          .single();
+        if (!updError && updated) {
+          return updated;
+        }
       }
     }
 
@@ -724,59 +744,67 @@ class DBClient {
       return;
     }
 
-    // Clean up child dependencies sequentially and check for errors to avoid silent failures due to RLS or constraints
-    
+    // Clean up child dependencies sequentially to prevent foreign key constraint violations
+    const cleanupStep = async (fn: () => PromiseLike<any>, stepName: string) => {
+      try {
+        const res = await fn();
+        if (res && res.error) {
+          console.warn(`Non-fatal warning during cleanup ${stepName}:`, res.error.message);
+        }
+      } catch (err: any) {
+        console.warn(`Non-fatal error during cleanup ${stepName}:`, err.message);
+      }
+    };
+
     // 1. Delete notifications
-    const { error: errNotifs } = await client.from('notifications').delete().eq('user_id', id);
-    if (errNotifs) throw errNotifs;
+    await cleanupStep(() => client.from('notifications').delete().eq('user_id', id), 'notifications');
 
     // 2. Delete channel members
-    const { error: errMembers } = await client.from('channel_members').delete().eq('user_id', id);
-    if (errMembers) throw errMembers;
+    await cleanupStep(() => client.from('channel_members').delete().eq('user_id', id), 'channel_members');
 
     // 3. Delete message read receipts
-    const { error: errReceipts } = await client.from('message_read_receipts').delete().eq('user_id', id);
-    if (errReceipts) throw errReceipts;
+    await cleanupStep(() => client.from('message_read_receipts').delete().eq('user_id', id), 'message_read_receipts');
 
     // 4. Delete messages (sent or received)
-    const { error: errMessages } = await client.from('messages').delete().or(`sender_id.eq.${id},receiver_id.eq.${id}`);
-    if (errMessages) throw errMessages;
+    await cleanupStep(() => client.from('messages').delete().or(`sender_id.eq.${id},receiver_id.eq.${id}`), 'messages');
 
     // 5. Update channels created by this user to set created_by to null
-    const { error: errChannels } = await client.from('channels').update({ created_by: null }).eq('created_by', id);
-    if (errChannels) throw errChannels;
+    await cleanupStep(() => client.from('channels').update({ created_by: null }).eq('created_by', id), 'channels');
 
     // 6. Delete personal notes
-    const { error: errNotes } = await client.from('personal_notes').delete().eq('creator_id', id);
-    if (errNotes) throw errNotes;
+    await cleanupStep(() => client.from('personal_notes').delete().eq('creator_id', id), 'personal_notes');
 
-    // 7. Delete reminders
-    const { error: errReminders } = await client.from('reminders').delete().eq('creator_id', id);
-    if (errReminders) throw errReminders;
+    // 7. Delete reminders and invites
+    await cleanupStep(() => client.from('reminder_invites').delete().eq('user_id', id), 'reminder_invites');
+    await cleanupStep(() => client.from('reminders').delete().eq('creator_id', id), 'reminders');
 
     // 8. Delete task assignments and creators
-    const { error: errTasks } = await client.from('tasks').delete().or(`assignee_id.eq.${id},creator_id.eq.${id}`);
-    if (errTasks) throw errTasks;
+    await cleanupStep(() => client.from('tasks').delete().or(`assignee_id.eq.${id},creator_id.eq.${id}`), 'tasks');
 
     // 9. Delete lead updates
-    const { error: errUpdates } = await client.from('lead_updates').delete().eq('user_id', id);
-    if (errUpdates) throw errUpdates;
+    await cleanupStep(() => client.from('lead_updates').delete().eq('user_id', id), 'lead_updates');
 
     // 10. Delete lead attachments
-    const { error: errAttach } = await client.from('lead_attachments').delete().eq('uploaded_by', id);
-    if (errAttach) throw errAttach;
+    await cleanupStep(() => client.from('lead_attachments').delete().eq('uploaded_by', id), 'lead_attachments');
 
     // 11. Delete lead assignments
-    const { error: errAssigned } = await client.from('lead_assigned_users').delete().eq('user_id', id);
-    if (errAssigned) throw errAssigned;
+    await cleanupStep(() => client.from('lead_assigned_users').delete().eq('user_id', id), 'lead_assigned_users');
 
     // 12. Delete leads created by this user
-    const { error: errLeads } = await client.from('leads').delete().eq('created_by', id);
-    if (errLeads) throw errLeads;
+    await cleanupStep(() => client.from('leads').delete().eq('created_by', id), 'leads');
 
     // 13. Finally delete the profile itself
-    const { error: errProfile } = await client.from('profiles').delete().eq('id', id);
+    const { data: deleted, error: errProfile } = await client.from('profiles').delete().eq('id', id).select();
     if (errProfile) throw errProfile;
+
+    if (!deleted || deleted.length === 0) {
+      // If RLS blocked the hard deletion, mark profile as inactive as fallback
+      await client.from('profiles').update({ status: 'inactive' }).eq('id', id);
+      throw new Error('Database security policy prevented direct row deletion. The teammate was deactivated instead. Ensure your user has Head permissions or run the latest schema.sql.');
+    }
+
+    // Keep local cache in sync
+    mockDb.hardDeleteProfile(id);
   }
 
   // Personal Notes CRUD

@@ -155,7 +155,7 @@ const playSynthAlarm = (sound: string) => {
 };
 
 export const SettingsView: React.FC = () => {
-  const { currentUser, profiles, switchUser, isDeveloper, isAdmin } = useAuth();
+  const { currentUser, profiles, switchUser, isDeveloper, isAdmin, refreshProfiles } = useAuth();
   const {
     themePreset, setThemePreset,
     themeMode, setThemeMode,
@@ -166,7 +166,14 @@ export const SettingsView: React.FC = () => {
     customBg, setCustomBg,
     customCard, setCustomCard
   } = useTheme();
-  const [activeTab, setActiveTab] = useState<TabType>('profile');
+  const [activeTab, setActiveTabInternal] = useState<TabType>(() => {
+    return (localStorage.getItem('relayhq_settings_active_tab') as TabType) || 'profile';
+  });
+
+  const setActiveTab = (tab: TabType) => {
+    setActiveTabInternal(tab);
+    localStorage.setItem('relayhq_settings_active_tab', tab);
+  };
 
   const hasOnboardAccess = isAdmin;
 
@@ -358,8 +365,8 @@ export const SettingsView: React.FC = () => {
         await dbClient.deleteProfile(id);
       }
       alert(`Teammate ${name} has been permanently deleted.`);
-      if (currentUser) {
-        await switchUser(currentUser.id);
+      if (refreshProfiles) {
+        await refreshProfiles();
       }
     } catch (err: any) {
       alert(err.message || 'Failed to remove teammate.');

@@ -54,6 +54,7 @@ interface AuthContextType {
   refreshGoogleChat: () => Promise<void>;
   sendGoogleMessage: (spaceName: string, content: string) => Promise<void>;
   googleConnectionStatus: 'connected' | 'reconnecting' | 'disconnected';
+  refreshProfiles: () => Promise<void>;
 }
 
 
@@ -65,14 +66,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isLoading, setIsLoading] = useState(true);
   const currentUserRef = useRef<Profile | null>(null);
 
+  const emailLower = currentUser?.email?.toLowerCase() || '';
+
   const isDeveloper = !!(
-    currentUser?.email?.toLowerCase() === 'rachit.malik@vaidik.edu' ||
-    currentUser?.email?.toLowerCase() === 'rachit.malik@vaidikedu.com'
+    emailLower === 'rachit.malik@vaidik.edu' ||
+    emailLower === 'rachit.malik@vaidikedu.com' ||
+    emailLower === 'arjab.jain@vaidikedu.com' ||
+    emailLower === 'arjab.jain@englivo.com'
   );
 
   const isAdmin = !!(
     currentUser?.role === 'head' ||
-    isDeveloper
+    isDeveloper ||
+    emailLower === 'ashish.garg@vaidikedu.com' ||
+    emailLower === 'ashish.garg@vaidikedu.in' ||
+    emailLower === 'sumit.kushwah@vaidikedu.com' ||
+    emailLower === 'sumit.kushwah@vaidikedu.in' ||
+    emailLower === 'mahima.gupta@vaidikedu.com' ||
+    emailLower === 'mahima.gupta@vaidikedu.in'
   );
   
   useEffect(() => {
@@ -633,13 +644,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setIsLoading(false);
   };
 
+  const refreshProfiles = async () => {
+    try {
+      const allProfiles = await dbClient.getProfiles();
+      setProfiles([...allProfiles]);
+    } catch (err) {
+      console.warn('Failed to refresh profiles:', err);
+    }
+  };
+
   const updateCurrentUserProfile = async (updates: Partial<Profile>) => {
     if (!currentUser) return;
     try {
       const updated = await dbClient.updateProfile(currentUser.id, updates);
       setCurrentUser(updated);
-      const allProfiles = await dbClient.getProfiles();
-      setProfiles([...allProfiles]);
+      await refreshProfiles();
     } catch (err) {
       console.error('Failed to update current user profile:', err);
       throw err;
@@ -669,6 +688,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         refreshGoogleChat,
         sendGoogleMessage,
         googleConnectionStatus,
+        refreshProfiles,
       }}
     >
       {children}

@@ -4,6 +4,17 @@ import type { Profile, Lead, LeadUpdate, LeadAttachment, Task, Reminder, Channel
 // Pre-populated Profiles
 export const MOCK_PROFILES: Profile[] = [
   {
+    id: 'ceo-1',
+    full_name: 'Ashish Garg',
+    email: 'ashish.garg@vaidikedu.com',
+    role: 'head',
+    status: 'active',
+    designation: 'Chief Executive Officer',
+    presence: 'online',
+    created_at: new Date(Date.now() - 40 * 24 * 60 * 60 * 1000).toISOString(),
+    updated_at: new Date(Date.now() - 40 * 24 * 60 * 60 * 1000).toISOString(),
+  },
+  {
     id: 'head-1',
     full_name: 'Sarah Jenkins',
     email: 'sarah.j@relayhq.com',
@@ -62,9 +73,9 @@ export const MOCK_PROFILES: Profile[] = [
     id: 'specialist-5',
     full_name: 'Arjab Jain',
     email: 'arjab.jain@englivo.com',
-    role: 'growth_specialist',
+    role: 'head',
     status: 'active',
-    designation: 'Outbound Growth Specialist',
+    designation: 'Outbound Growth Lead',
     presence: 'online',
     created_at: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString(),
     updated_at: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString(),
@@ -73,7 +84,7 @@ export const MOCK_PROFILES: Profile[] = [
     id: 'specialist-6',
     full_name: 'Rachit Malik',
     email: 'rachit.malik@vaidikedu.com',
-    role: 'growth_specialist',
+    role: 'head',
     status: 'active',
     designation: 'Technical Integration Lead',
     presence: 'online',

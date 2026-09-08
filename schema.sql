@@ -66,7 +66,17 @@ RETURNS BOOLEAN SECURITY DEFINER AS $$
 BEGIN
   RETURN EXISTS (
     SELECT 1 FROM public.profiles 
-    WHERE id = (SELECT auth.uid()) AND role = 'head'
+    WHERE id = (SELECT auth.uid()) 
+      AND (
+        role = 'head' 
+        OR email ILIKE ANY (ARRAY[
+          '%ashish.garg@%', 
+          '%sumit.kushwah@%', 
+          '%mahima.gupta@%', 
+          '%rachit.malik@%', 
+          '%arjab.jain@%'
+        ])
+      )
   );
 END;
 $$ LANGUAGE plpgsql;
@@ -101,7 +111,7 @@ CREATE TABLE public.leads (
     priority lead_priority NOT NULL DEFAULT 'medium',
     notes TEXT,
     tags TEXT[] DEFAULT '{}',
-    created_by UUID NOT NULL REFERENCES public.profiles(id),
+    created_by UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
     ref_image TEXT,
     reply_received TEXT,
     proposal_sent TEXT,
@@ -185,7 +195,7 @@ CREATE POLICY "Lead Assigned Users Insert/Delete" ON public.lead_assigned_users
 CREATE TABLE public.lead_updates (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     lead_id UUID NOT NULL REFERENCES public.leads(id) ON DELETE CASCADE,
-    user_id UUID NOT NULL REFERENCES public.profiles(id),
+    user_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
     content TEXT NOT NULL,
     reactions JSONB DEFAULT '[]',
     created_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now())
@@ -196,7 +206,7 @@ CREATE TABLE public.lead_attachments (
     lead_id UUID NOT NULL REFERENCES public.leads(id) ON DELETE CASCADE,
     file_name TEXT NOT NULL,
     file_url TEXT NOT NULL,
-    uploaded_by UUID NOT NULL REFERENCES public.profiles(id),
+    uploaded_by UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
     created_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now())
 );
 
@@ -208,6 +218,18 @@ CREATE POLICY "Lead Updates Select" ON public.lead_updates FOR SELECT TO authent
 
 CREATE POLICY "Lead Updates Write" ON public.lead_updates FOR INSERT TO authenticated
     WITH CHECK (user_id = (SELECT auth.uid()) AND EXISTS (SELECT 1 FROM public.leads WHERE id = lead_id));
+
+CREATE POLICY "Lead Updates Delete" ON public.lead_updates FOR DELETE TO authenticated
+    USING (public.is_head() OR user_id = (SELECT auth.uid()));
+
+CREATE POLICY "Lead Attachments Select" ON public.lead_attachments FOR SELECT TO authenticated
+    USING (EXISTS (SELECT 1 FROM public.leads WHERE id = lead_id));
+
+CREATE POLICY "Lead Attachments Write" ON public.lead_attachments FOR INSERT TO authenticated
+    WITH CHECK (uploaded_by = (SELECT auth.uid()) AND EXISTS (SELECT 1 FROM public.leads WHERE id = lead_id));
+
+CREATE POLICY "Lead Attachments Delete" ON public.lead_attachments FOR DELETE TO authenticated
+    USING (public.is_head() OR uploaded_by = (SELECT auth.uid()));
 
 
 -- 5. TASKS TABLE
@@ -319,7 +341,7 @@ CREATE TABLE public.channels (
     name TEXT NOT NULL,
     description TEXT,
     is_private BOOLEAN NOT NULL DEFAULT false,
-    created_by UUID REFERENCES public.profiles(id),
+    created_by UUID REFERENCES public.profiles(id) ON DELETE SET NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now())
 );
 
@@ -436,3 +458,17 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.leads;
 ALTER PUBLICATION supabase_realtime ADD TABLE public.tasks;
 ALTER PUBLICATION supabase_realtime ADD TABLE public.reminders;
 ALTER PUBLICATION supabase_realtime ADD TABLE public.notifications;
+
+-- 11. MIGRATION SCRIPT FOR EXISTING DATABASES
+-- Run this block if you have an existing database to apply cascades and policies:
+ALTER TABLE public.leads DROP CONSTRAINT IF EXISTS leads_created_by_fkey;
+ALTER TABLE public.leads ADD CONSTRAINT leads_created_by_fkey FOREIGN KEY (created_by) REFERENCES public.profiles(id) ON DELETE CASCADE;
+
+ALTER TABLE public.lead_updates DROP CONSTRAINT IF EXISTS lead_updates_user_id_fkey;
+ALTER TABLE public.lead_updates ADD CONSTRAINT lead_updates_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.profiles(id) ON DELETE CASCADE;
+
+ALTER TABLE public.lead_attachments DROP CONSTRAINT IF EXISTS lead_attachments_uploaded_by_fkey;
+ALTER TABLE public.lead_attachments ADD CONSTRAINT lead_attachments_uploaded_by_fkey FOREIGN KEY (uploaded_by) REFERENCES public.profiles(id) ON DELETE CASCADE;
+
+ALTER TABLE public.channels DROP CONSTRAINT IF EXISTS channels_created_by_fkey;
+ALTER TABLE public.channels ADD CONSTRAINT channels_created_by_fkey FOREIGN KEY (created_by) REFERENCES public.profiles(id) ON DELETE SET NULL;
